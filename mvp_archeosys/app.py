@@ -46,24 +46,17 @@ def login(usuario: LoginUsuario):
         ).first()
         if usuario_BD is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        if not usuario.senha == usuario_BD.senha:
+        elif not usuario.senha == usuario_BD.senha:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
 
-        token = {"email" : usuario.email, "senha" : usuario.senha, "tipo" : usuario_BD.tipo}
 
-    #expiracao = datetime.now(datetime.timezone.utc) + timedelta(hours=1)
-    
-    #dados_usuario = {"email": str(email), "senha": str(senha), tipo}
+        dados_token = {"email" : str(usuario.email), "tipo" : str(usuario_BD.tipo), "id" : str(usuario_BD.id_usuarios)}
 
+        expiracao = datetime.now(datetime.timezone.utc) + timedelta(hours=1)
 
+        token_jwt = jwt.encode(dados_token, SECRET_KEY, algorithm=ALGORITHM)
 
-
-
-
-
-
-
-
+        return {"access_token": token_jwt, "token_type": "bearer", "exp": expiracao}
 
 '''
 def deletar_escola(id):
