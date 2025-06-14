@@ -1,13 +1,15 @@
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, select
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone
-
+from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
 
 DATABASE_URL = 'postgresql://postgres:admin@localhost:5432/MVP' #endereco do servidor postgres
 
@@ -19,8 +21,7 @@ session = Session(engine)
 # Passo 5: Access all mapped classes
 for class_name in Base.classes.keys():
     orm_class = getattr(Base.classes, class_name)
-    print(f"Table: {class_name}")
-
+    #print(f"Table: {class_name}")
     # Opcional mostrar todas as tabelas
     first_row = session.query(orm_class).first()
     if first_row:
@@ -33,6 +34,31 @@ for class_name in Base.classes.keys():
 SECRET_KEY = "tbkMfMPLvnJUKPAXwsTWs9Q8H180vbquMUoVbXCA6cA="
 ALGORITHM = "HS256"
 
+def get_usuario_logado(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        usuario_id = payload.get("sub")
+        tipo = payload.get("tipo")
+        if not usuario_id or not tipo:
+            raise HTTPException(status_code=401, detail="Token inválido")
+        return {"id": usuario_id, "tipo": tipo}
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado")
+
+def somente_secretaria(usuario=Depends(get_usuario_logado)):
+    if usuario["tipo"] != "secretaria":
+        raise HTTPException(status_code=403, detail="Apenas a Secretaria de educação pode realizar esta ação.")
+    return usuario
+
+def somente_coordenador(usuario=Depends(get_usuario_logado)):
+    if usuario["tipo"] != "coordenador":
+        raise HTTPException(status_code=403, detail="Apenas coordanadores podem realizar esta ação.")
+    return usuario
+
+def somente_diretor(usuario=Depends(get_usuario_logado)):
+    if usuario["tipo"] != "diretor":
+        raise HTTPException(status_code=403, detail="Apenas diretores podem realizar esta ação.")
+    return usuario
 
 class LoginUsuario(BaseModel):
     email: str
@@ -45,12 +71,10 @@ def login(usuario: LoginUsuario):
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == usuario.email)
         ).first()
         if usuario_BD is None:
-            print('falha 1')
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         elif not usuario.senha == usuario_BD.senha:
-            print('falha 2')
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
+        
         dados_token = {"email" : str(usuario.email), "tipo" : str(usuario_BD.tipo), "id" : str(usuario_BD.id_usuarios)}
 
         expiracao = datetime.now(timezone.utc) + timedelta(hours=1)
@@ -81,8 +105,8 @@ class EscolaCreate(BaseModel):
     nome: str
     endereco: str
 
-@app.post("/escolas/", status_code=status.HTTP_201_CREATED)
-def cadastrar_escolas(escola: EscolaCreate):
+@app.post("/escolas/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é a secretaria
+def cadastrar_escolas(escola: EscolaCreate, Depends(somente_secretaria)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.escolas).where(Base.classes.escolas.nome == escola.nome)
@@ -103,7 +127,7 @@ class DiretorCreate(BaseModel):
     escola: str
 
 @app.post("/diretores/", status_code=status.HTTP_201_CREATED)
-def cadastrar_diretores(diretor: DiretorCreate):
+def cadastrar_diretores(diretor: DiretorCreate, Depends(somente_secretaria)): #quem pode cadastrar é a secretaria
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == diretor.email)
@@ -125,8 +149,8 @@ class CoordenadorCreate(BaseModel):
     senha: str
     escola: str
 
-@app.post("/coordenadores/", status_code=status.HTTP_201_CREATED)
-def cadastrar_coordenadores(coordenador: CoordenadorCreate):
+@app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
+def cadastrar_coordenadores(coordenador: CoordenadorCreate, Depends(somente_diretor)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == coordenador.email)
@@ -149,7 +173,7 @@ class ProfessorCreate(BaseModel):
     escola: str
 
 @app.post("/professores/", status_code=status.HTTP_201_CREATED)
-def cadastrar_professores(professor: ProfessorCreate):
+def cadastrar_professores(professor: ProfessorCreate, Depends(somente_coordenador)): #quem pode cadastrar é o coordenador
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == professor.email)
@@ -171,8 +195,8 @@ class AlunoCreate(BaseModel):
     senha: str
     escola: str
 
-@app.post("/alunos/", status_code=status.HTTP_201_CREATED)
-def cadastrar_alunos(aluno: AlunoCreate):
+@app.post("/alunos/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o coordenador
+def cadastrar_alunos(aluno: AlunoCreate, Depends(somente_coordenador)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == aluno.email)
