@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, select
 from fastapi import FastAPI, HTTPException, status
 from pydantic import BaseModel
 from jose import JWTError, jwt
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 app = FastAPI()
@@ -45,18 +45,22 @@ def login(usuario: LoginUsuario):
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == usuario.email)
         ).first()
         if usuario_BD is None:
+            print('falha 1')
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         elif not usuario.senha == usuario_BD.senha:
+            print('falha 2')
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-
 
         dados_token = {"email" : str(usuario.email), "tipo" : str(usuario_BD.tipo), "id" : str(usuario_BD.id_usuarios)}
 
-        expiracao = datetime.now(datetime.timezone.utc) + timedelta(hours=1)
+        expiracao = datetime.now(timezone.utc) + timedelta(hours=1)
 
         token_jwt = jwt.encode(dados_token, SECRET_KEY, algorithm=ALGORITHM)
 
+        print(token_jwt)
+
         return {"access_token": token_jwt, "token_type": "bearer", "exp": expiracao}
+    
 
 '''
 def deletar_escola(id):
