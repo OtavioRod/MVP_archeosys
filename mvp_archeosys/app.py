@@ -4,7 +4,7 @@ from sqlalchemy import create_engine, select
 from fastapi import FastAPI, HTTPException, status, Depends
 from pydantic import BaseModel
 from jose import JWTError, jwt
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, date
 from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
@@ -86,27 +86,12 @@ def login(usuario: LoginUsuario):
         return {"access_token": token_jwt, "token_type": "bearer", "exp": expiracao}
     
 
-'''
-def deletar_escola(id):
-    with Session(engine) as s:
-        result = s.scalars(
-            select(Base.classes.escolas).where(Base.classes.escolas.id_escola == id)
-        ).first()
-
-        print(result.endereco)
-        
-        if result:
-            s.delete(result)
-            s.commit()
-        else:
-            print("Escola com id especificado não encontrada.")
-'''
 class EscolaCreate(BaseModel):
     nome: str
     endereco: str
 
 @app.post("/escolas/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é a secretaria
-def cadastrar_escolas(escola: EscolaCreate, Depends(somente_secretaria)):
+def cadastrar_escolas(escola: EscolaCreate, usuario = Depends(somente_secretaria)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.escolas).where(Base.classes.escolas.nome == escola.nome)
@@ -127,13 +112,13 @@ class DiretorCreate(BaseModel):
     escola: str
 
 @app.post("/diretores/", status_code=status.HTTP_201_CREATED)
-def cadastrar_diretores(diretor: DiretorCreate, Depends(somente_secretaria)): #quem pode cadastrar é a secretaria
+def cadastrar_diretores(diretor: DiretorCreate, usuario = Depends(somente_secretaria)): #quem pode cadastrar é a secretaria
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == diretor.email)
         ).first()
         if result is None:
-            novo_usuario = Base.classes.usuarios(nome_usuarios = diretor.nome, email = diretor.email, senha = diretor.senha, tipo = 'diretor')
+            novo_usuario = Base.classes.usuarios(nome_usuarios = diretor.nome, email = diretor.email, senha = diretor.senha, tipo = 'Diretor')
             s.add(novo_usuario)
             s.flush()
             escola = s.scalars(select(Base.classes.escolas).where(Base.classes.escolas.nome == diretor.escola)).first()
@@ -150,13 +135,13 @@ class CoordenadorCreate(BaseModel):
     escola: str
 
 @app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
-def cadastrar_coordenadores(coordenador: CoordenadorCreate, Depends(somente_diretor)):
+def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(somente_diretor)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == coordenador.email)
         ).first()
         if result is None:
-            novo_usuario = Base.classes.usuarios(nome_usuarios = coordenador.nome, email = coordenador.email, senha = coordenador.senha, tipo = 'coordenador')
+            novo_usuario = Base.classes.usuarios(nome_usuarios = coordenador.nome, email = coordenador.email, senha = coordenador.senha, tipo = 'Coordenador')
             s.add(novo_usuario)
             s.flush()
             escola = s.scalars(select(Base.classes.escolas).where(Base.classes.escolas.nome == coordenador.escola)).first()
@@ -173,13 +158,13 @@ class ProfessorCreate(BaseModel):
     escola: str
 
 @app.post("/professores/", status_code=status.HTTP_201_CREATED)
-def cadastrar_professores(professor: ProfessorCreate, Depends(somente_coordenador)): #quem pode cadastrar é o coordenador
+def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_coordenador)): #quem pode cadastrar é o coordenador
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == professor.email)
         ).first()
         if result is None:
-            novo_usuario = Base.classes.usuarios(nome_usuarios = professor.nome, email = professor.email, senha = professor.senha, tipo = 'professor')
+            novo_usuario = Base.classes.usuarios(nome_usuarios = professor.nome, email = professor.email, senha = professor.senha, tipo = 'Professor')
             s.add(novo_usuario)
             s.flush()
             escola = s.scalars(select(Base.classes.escolas).where(Base.classes.escolas.nome == professor.escola)).first()
@@ -196,13 +181,13 @@ class AlunoCreate(BaseModel):
     escola: str
 
 @app.post("/alunos/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o coordenador
-def cadastrar_alunos(aluno: AlunoCreate, Depends(somente_coordenador)):
+def cadastrar_alunos(aluno: AlunoCreate, usuario = Depends(somente_coordenador)):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == aluno.email)
         ).first()
         if result is None:
-            novo_usuario = Base.classes.usuarios(nome_usuarios = aluno.nome, email = aluno.email, senha = aluno.senha, tipo = 'aluno')
+            novo_usuario = Base.classes.usuarios(nome_usuarios = aluno.nome, email = aluno.email, senha = aluno.senha, tipo = 'Aluno')
             s.add(novo_usuario)
             s.flush()
             escola = s.scalars(select(Base.classes.escolas).where(Base.classes.escolas.nome == aluno.escola)).first()
@@ -211,3 +196,96 @@ def cadastrar_alunos(aluno: AlunoCreate, Depends(somente_coordenador)):
             s.commit()
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+
+class TurmaCreate(BaseModel):
+    nome: str
+    turno: str
+    escola: str
+
+@app.post("/turma/", status_code=status.HTTP_201_CREATED) #cadastrar turma pelo coordenador
+def cadastrar_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
+    with Session(engine) as s:
+        result = s.scalars(
+            select(Base.classes.turmas).where(Base.classes.turmas.nome == turma.nome)
+        ).first()
+        if result is None:
+            escola = select(Base.classes.escolas).where(Base.classes.escolas.nome == turma.escola)
+            nova_turma = Base.classes.turmas(nome = turma.nome, turno = turma.turno, id_escolas = escola.id_escolas)
+            s.add(nova_turma)
+            s.commit()
+        else:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+
+class AlunoTurmaCreate(BaseModel):
+    aluno: str
+    turma: str
+
+@app.post("/aluno_turma/", status_code=status.HTTP_201_CREATED)
+def cadastrar_aluno_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
+    with Session(engine) as s:
+        if not turma_BD:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+        if not aluno_BD:
+            raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+        turma_BD = s.scalars(select(Base.classes.turmas).where(Base.classes.turmas.nome == turma.turma)).first()
+        aluno_BD = s.scalars(select(Base.classes.usuarios).where(Base.classes.usuarios.nome == turma.aluno)).first()
+        aluno_turma = Base.classes.turma_alunos(id_turmas = turma_BD.id_turmas,id_alunos = aluno_BD.id_alunos)
+        s.add(aluno_turma)
+        s.commit()
+
+
+class DisciplinaCreate(BaseModel):
+    nome: str
+    turma: str
+    professor: str
+
+@app.post("/disciplina/", status_code=status.HTTP_201_CREATED) #cadastrar disciplina pelo coordenador
+def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente_coordenador)):
+    with Session(engine) as s:
+        result = s.scalars(
+            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome == disciplina.nome)
+        ).first()
+        if result is None:
+            turma = select(Base.classes.turmas).where(Base.classes.turmas.nome == disciplina.turma)#terminar
+            professor = select(Base.classes.professores).where(Base.classes.professores.nome == disciplina.professor)#terminar
+            nova_disciplina = Base.classes.disciplinas(nome = disciplina.nome, id_turmas = turma.id_turmas,id_professores = professor.id_professores)
+            s.add(nova_disciplina)
+            s.commit()
+
+
+
+
+class PresencaCreate(BaseModel):
+    aluno: str
+    disciplina: str
+    presente: bool
+    justificativa: str
+
+
+@app.post("/presenca/", status_code=status.HTTP_201_CREATED)#quem pode cadastrar é o professor
+def cadastrar_presenca(presenca: PresencaCreate, usuario = Depends(somente_coordenador)):
+    with Session(engine) as s:
+        result = s.scalars(
+            aluno = # continuar daqui
+            
+            select(Base.classes.presencas).where(
+                (Base.classes.presencas.id_aluno == presenca.nome) &
+                (Base.classes.presencas.data == date.today()) &
+                (Base.classes.presencas.id_disciplinas == presenca.nome)
+                )
+        ).first()
+
+
+
+
+#cadastrar notas #professor
+class NotasCreate(BaseModel):
+    aluno: str
+    disciplina: str
+    bimestre: int
+    nota: float
+
+
+
+#cadastrar secretaria
