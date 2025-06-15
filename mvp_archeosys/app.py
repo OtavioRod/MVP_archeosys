@@ -1,15 +1,16 @@
+from typing import Annotated
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, select
-from fastapi import FastAPI, HTTPException, status, Depends
-from pydantic import BaseModel
+from fastapi import FastAPI, HTTPException, status, Depends, Security, Form
+from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone, date
 from fastapi.security import OAuth2PasswordBearer
 
 app = FastAPI()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 DATABASE_URL = 'postgresql://postgres:admin@localhost:5432/MVP' #endereco do servidor postgres
 
@@ -18,7 +19,6 @@ Base = automap_base()
 Base.prepare(autoload_with=engine)
 session = Session(engine)
 
-# Passo 5: Access all mapped classes
 for class_name in Base.classes.keys():
     orm_class = getattr(Base.classes, class_name)
     #print(f"Table: {class_name}")
@@ -34,7 +34,7 @@ for class_name in Base.classes.keys():
 SECRET_KEY = "tbkMfMPLvnJUKPAXwsTWs9Q8H180vbquMUoVbXCA6cA="
 ALGORITHM = "HS256"
 
-def get_usuario_logado(token: str = Depends(oauth2_scheme)):
+def get_usuario_logado(token: Annotated[str, Depends(oauth2_scheme)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         usuario_id = payload.get("sub")
@@ -60,30 +60,33 @@ def somente_diretor(usuario=Depends(get_usuario_logado)):
         raise HTTPException(status_code=403, detail="Apenas diretores podem realizar esta ação.")
     return usuario
 
-class LoginUsuario(BaseModel):
-    email: str
-    senha: str
-
-@app.post("/login/", status_code=status.HTTP_200_OK)
-def login(usuario: LoginUsuario):
+class LoginUsuario:
+    def __init__(self, email: EmailStr = Form(...), senha: str = Form(...)):
+        self.email = email
+        self.senha = senha
+'''
+@app.post("/token/", status_code=status.HTTP_200_OK)
+def login(email: EmailStr = Form(...), senha: str = Form(...)):
+    return {"email": email, "senha": senha}
+'''
+@app.post("/token/", status_code=status.HTTP_200_OK)
+def login(email: EmailStr = Form(...), senha: str = Form(...)): # antes de mudar estava assim: def login(usuario: LoginUsuario):
     with Session(engine) as s:
         usuario_BD = s.scalars(
-            select(Base.classes.usuarios).where(Base.classes.usuarios.email == usuario.email)
+            select(Base.classes.usuarios).where(Base.classes.usuarios.email == email)
         ).first()
         if usuario_BD is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
-        elif not usuario.senha == usuario_BD.senha:
+        elif not senha == usuario_BD.senha:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
         
-        dados_token = {"email" : str(usuario.email), "tipo" : str(usuario_BD.tipo), "id" : str(usuario_BD.id_usuarios)}
+        dados_token = {"email" : str(email), "tipo" : str(usuario_BD.tipo), "sub" : str(usuario_BD.id_usuarios), "exp": datetime.now(timezone.utc) + timedelta(hours=1)}
 
         expiracao = datetime.now(timezone.utc) + timedelta(hours=1)
 
         token_jwt = jwt.encode(dados_token, SECRET_KEY, algorithm=ALGORITHM)
 
-        print(token_jwt)
-
-        return {"access_token": token_jwt, "token_type": "bearer", "exp": expiracao}
+        return {"access_token": token_jwt, "token_type": "bearer"}
     
 
 class EscolaCreate(BaseModel):
@@ -107,7 +110,7 @@ def cadastrar_escolas(escola: EscolaCreate, usuario = Depends(somente_secretaria
 
 class DiretorCreate(BaseModel):
     nome: str
-    email: str
+    email: EmailStr
     senha: str
     escola: str
 
@@ -130,12 +133,12 @@ def cadastrar_diretores(diretor: DiretorCreate, usuario = Depends(somente_secret
 
 class CoordenadorCreate(BaseModel):
     nome: str
-    email: str
+    email: EmailStr
     senha: str
     escola: str
 
-@app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
-def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(somente_diretor)):
+@app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é secretaria
+def cadastrar_coordenadores(coordenador: CoordenadorCreate, token: Annotated[str, Depends(oauth2_scheme)]):
     with Session(engine) as s:
         result = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.email == coordenador.email)
@@ -153,7 +156,7 @@ def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(so
 
 class ProfessorCreate(BaseModel):
     nome: str
-    email: str
+    email: EmailStr
     senha: str
     escola: str
 
@@ -176,7 +179,7 @@ def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_
 
 class AlunoCreate(BaseModel):
     nome: str
-    email: str
+    email: EmailStr
     senha: str
     escola: str
 
@@ -220,7 +223,7 @@ class AlunoTurmaCreate(BaseModel):
     aluno: str
     turma: str
 
-@app.post("/aluno_turma/", status_code=status.HTTP_201_CREATED)
+@app.post("/aluno_turma/", status_code=status.HTTP_201_CREATED, )
 def cadastrar_aluno_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
     with Session(engine) as s:
         if not turma_BD:
@@ -252,6 +255,8 @@ def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente
             nova_disciplina = Base.classes.disciplinas(nome = disciplina.nome, id_turmas = turma.id_turmas,id_professores = professor.id_professores)
             s.add(nova_disciplina)
             s.commit()
+        else:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
 
 
@@ -267,16 +272,14 @@ class PresencaCreate(BaseModel):
 def cadastrar_presenca(presenca: PresencaCreate, usuario = Depends(somente_coordenador)):
     with Session(engine) as s:
         result = s.scalars(
-            aluno = # continuar daqui
+            #aluno = select(Base.classes.usuarios).where(Base.classes.alunos)
             
             select(Base.classes.presencas).where(
-                (Base.classes.presencas.id_aluno == presenca.nome) &
+                (Base.classes.presencas.id_aluno == aluno.id_usuarios) &
                 (Base.classes.presencas.data == date.today()) &
                 (Base.classes.presencas.id_disciplinas == presenca.nome)
                 )
         ).first()
-
-
 
 
 #cadastrar notas #professor
@@ -287,5 +290,22 @@ class NotasCreate(BaseModel):
     nota: float
 
 
+class SecretariaCreate(BaseModel):
+    nome: str
+    email: EmailStr
+    senha: str
 
 #cadastrar secretaria
+@app.post("/secretaria/", status_code=status.HTTP_201_CREATED)
+def cadastrar_presenca(secretaria: SecretariaCreate):
+    with Session(engine) as s:
+        result = s.scalars(
+                select(Base.classes.usuarios).where(Base.classes.usuarios.email == secretaria.email)
+            ).first()
+        if result is None:
+            nova_secretaria = Base.classes.usuarios(nome_usuarios = secretaria.nome, email = secretaria.email, senha = secretaria.senha, tipo = 'SecretariaEducacao')
+            s.add(nova_secretaria)
+            s.commit()
+        else:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT)
+        
