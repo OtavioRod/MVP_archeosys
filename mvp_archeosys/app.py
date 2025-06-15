@@ -415,6 +415,38 @@ class NotasCreate(BaseModel):
     bimestre: int
     nota: float
 
+@app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
+def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+
+        usuario_aluno = session.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
+        ).first()
+        if usuario_aluno is None:
+            raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
+        aluno = session.scalars(
+            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
+        ).first()
+        if aluno is None:
+            raise HTTPException(status_code=409, detail="aluno inválido")
+
+        disciplina = session.scalars(
+            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == notas.disciplina)
+        ).first()
+
+        if 1 < notas.bimestre <= 4:
+            raise HTTPException(status_code=409, detail="bimestre menor que 1, ou maior que 4, inválido")
+
+        if 0 < notas.nota > 10:
+            raise HTTPException(status_code=409, detail="nota menor que 0, ou maior que 10, inválido")
+        
+        nova_nota = Base.classes.notas(id_usuarios = usuario_aluno.id_usuarios, id_alunos = aluno.id_alunos, id_disciplinas = disciplina.id_disciplinas, bimestre = notas.bimestre, nota = notas.nota)
+
+        s.add(nova_nota)
+        s.commit()
+
+
+
 class RelatorioAula(BaseModel):#corrigir modelo
     aluno: str
     disciplina: str
