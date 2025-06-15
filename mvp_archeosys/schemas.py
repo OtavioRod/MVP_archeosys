@@ -61,7 +61,11 @@ class SecretariaCreate(BaseModel):
     email: EmailStr
     senha: str
 
-
+class NotasCreate(BaseModel):
+    aluno: str
+    disciplina: str
+    bimestre: int
+    nota: float
 
 
 

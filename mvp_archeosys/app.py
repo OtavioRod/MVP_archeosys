@@ -1,7 +1,7 @@
 from typing import Annotated
 from sqlalchemy.ext.automap import automap_base
-from sqlalchemy.orm import Session
-from sqlalchemy import create_engine, select
+from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, select,MetaData, Table
 from fastapi import FastAPI, HTTPException, status, Depends, Security, Form
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
@@ -19,6 +19,10 @@ engine = create_engine(DATABASE_URL)
 Base = automap_base()
 Base.prepare(autoload_with=engine)
 session = Session(engine)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)#gerar gets
+metadata = MetaData()
+metadata.reflect(bind=engine)
+
 
 for class_name in Base.classes.keys():
     orm_class = getattr(Base.classes, class_name)
@@ -287,78 +291,6 @@ def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente
             "turma": turma_BD.nome_turma,
             "professor": usuario_prof.nome_usuarios
         }
-'''
-@app.post("/presenca/", status_code=status.HTTP_201_CREATED)#quem pode cadastrar é o professor
-def cadastrar_presenca(presenca: PresencaCreate, usuario = Depends(somente_professor)):
-    with Session(engine) as s:
-        usuario = s.scalars(select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == presenca.aluno)).first()
-        disciplina = s.scalars(select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)).first()
-        result = s.scalars(
-            select(Base.classes.presencas).where(
-                (Base.classes.presencas.id_alunos == usuario.id_usuarios) &
-                (Base.classes.presencas.data == date.today()) &
-                (Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas)
-                )
-        ).first()
-        if result is None:
-            aluno = s.scalars(
-            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario.id_usuarios)
-        ).first()
-        if aluno is None:
-            raise HTTPException(status_code=404, detail="Usuário não está registrado como aluno")
-        
-        disciplina = s.scalars(
-            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome == presenca.disciplina)
-        ).first()
-        if disciplina is None:
-            raise HTTPException(status_code=404, detail="Disciplina não encontrada")
-        
-        result = s.scalars(
-            select(Base.classes.presencas).where(
-                (Base.classes.presencas.id_alunos == aluno.id_alunos) &
-                (Base.classes.presencas.data == date.today()) &
-                (Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas)
-            )
-        ).first()
-        
-        if disciplina is None:
-            raise HTTPException(status_code=409, detail="Disciplina não existe")
-            nova_presenca = Base.classes.presencas(id_alunos = usuario.id_usuarios ,id_disciplinas = disciplina.id_disciplinas,data = date.today(),presente = presenca.presente,justificativa = presenca.justificativa)
-            s.add(nova_presenca)
-            s.commit()
-        else:
-            raise HTTPException(status_code=409, detail="Presençaz já cadastrada")
-'''
-'''
-@app.post("/presenca/", status_code=status.HTTP_201_CREATED)#quem pode cadastrar é o professor
-def cadastrar_presenca(presenca: PresencaCreate, usuario = Depends(somente_professor)):
-    with Session(engine) as s:
-        usuario = s.scalars(select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == presenca.aluno)).first()
-        disciplina = s.scalars(select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)).first()
-        result = s.scalars(
-            select(Base.classes.presencas).where(
-                (Base.classes.presencas.id_alunos == usuario.id_usuarios) &
-                (Base.classes.presencas.data == date.today()) &
-                (Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas)
-                )
-        ).first()
-        if result is None:
-            aluno = s.scalars(select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario.id_usuarios)).first()
-            disciplina = s.scalars(select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)).first()
-            print('-'*100)
-            print(disciplina)
-            if disciplina is None:
-                raise HTTPException(status_code=409, detail="Disciplina não existe")
-            ###############
-            aluno_entry = s.scalars(
-                select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario.id_usuarios)
-            ).first()
-            nova_presenca = Base.classes.presencas(id_alunos = aluno_entry.id_alunos ,id_disciplinas = disciplina.id_disciplinas,data = date.today(),presente = presenca.presente,justificativa = presenca.justificativa)
-            s.add(nova_presenca)
-            s.commit()
-        else:
-            raise HTTPException(status_code=409, detail="Presença já cadastrada")
-'''
 
 @app.post("/presenca/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
@@ -408,17 +340,9 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
         
         return {"message": "Presença cadastrada com sucesso"}
 
-#cadastrar notas #professor
-class NotasCreate(BaseModel):
-    aluno: str
-    disciplina: str
-    bimestre: int
-    nota: float
-
 @app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
     with Session(engine) as s:
-
         usuario_aluno = session.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
         ).first()
@@ -445,16 +369,66 @@ def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
         s.add(nova_nota)
         s.commit()
 
-
-
-class RelatorioAula(BaseModel):#corrigir modelo
-    aluno: str
+class RelatorioAula(BaseModel):
+    professor: str
     disciplina: str
-    bimestre: int
-    nota: float
+    conteudo: str
+    metodologia: str
+    recursos: str
 
+
+
+@app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
+def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        professor = session.scalars(
+            select(Base.classes.professores).where(Base.classes.professores.id_professores == relatorioaula.professor)
+        ).first()
+        disciplina = session.scalars(
+            select(Base.classes.disciplinas).where(Base.classes.disciplinas.id_disciplinas == relatorioaula.id_usuarios)
+        ).first()
+        id_professor = int(professor.id_professores)
+        novo_relatorioaula = Base.classes.relatorios_aula(
+            id_professores = id_professor, id_disciplinas = disciplina.id_disciplinas, data = date.today(), conteudo = relatorioaula.conteudo, metodologia = relatorioaula.metodologia, recursos = relatorioaula.recursos
+            )
+        s.add(novo_relatorioaula)
+        s.commit()
+
+
+
+
+
+
+
+
+'''
 class SolicitacaoCorrecaoCreate(BaseModel):#corrigir modelo
-    aluno: str
-    disciplina: str
-    bimestre: int
-    nota: float
+    aluno
+    tipo
+    referencia #referencia ao ID da nota ou presenca
+    mensagem
+    #status, default 'Pendente'
+'''
+
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Generate individual GET endpoints for each table
+for table_name in metadata.tables:
+    def get_table_data(table_name=table_name):
+        table = Table(table_name, metadata, autoload_with=engine)
+        with engine.connect() as conn:  # Establish connection first
+            result = conn.execute(table.select())  # Now execute the query
+            data = result.fetchall()
+        return [dict(row._mapping) for row in data]  # Properly convert row objects
+
+    endpoint = f"/{table_name}"
+    app.get(endpoint)(get_table_data)
+
+
+
