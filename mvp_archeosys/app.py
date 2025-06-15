@@ -418,14 +418,14 @@ def get_db():
     finally:
         db.close()
 
-# Generate individual GET endpoints for each table
+
 for table_name in metadata.tables:
     def get_table_data(table_name=table_name):
         table = Table(table_name, metadata, autoload_with=engine)
-        with engine.connect() as conn:  # Establish connection first
-            result = conn.execute(table.select())  # Now execute the query
+        with engine.connect() as conn:
+            result = conn.execute(table.select())
             data = result.fetchall()
-        return [dict(row._mapping) for row in data]  # Properly convert row objects
+        return [dict(row._mapping) for row in data]
 
     endpoint = f"/{table_name}"
     app.get(endpoint)(get_table_data)
