@@ -35,7 +35,9 @@ class AlunoCreate(BaseModel):
     escola: str
 
 class TurmaCreate(BaseModel):
-    nome: str
+    nome_turma: str
+    horario: str
+    serie: str
     turno: str
     escola: str
 
@@ -54,7 +56,10 @@ class PresencaCreate(BaseModel):
     presente: bool
     justificativa: str
 
-
+class SecretariaCreate(BaseModel):
+    nome: str
+    email: EmailStr
+    senha: str
 
 
 
