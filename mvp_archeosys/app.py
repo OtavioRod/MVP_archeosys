@@ -7,6 +7,7 @@ from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone, date
 from fastapi.security import OAuth2PasswordBearer
+from mvp_archeosys.schemas import *
 
 app = FastAPI()
 
@@ -78,8 +79,6 @@ def login(username: EmailStr = Form(...), password: str = Form(...)): # antes de
         token_jwt = jwt.encode(dados_token, SECRET_KEY, algorithm=ALGORITHM)
 
         return {"access_token": token_jwt, "token_type": "bearer"}
-    
-
 
 
 @app.post("/escolas/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é a secretaria
@@ -95,7 +94,6 @@ def cadastrar_escolas(escola: EscolaCreate, usuario = Depends(somente_secretaria
             print('escola cadastrada')
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
-
 
 
 @app.post("/diretores/", status_code=status.HTTP_201_CREATED)
@@ -114,7 +112,6 @@ def cadastrar_diretores(diretor: DiretorCreate, usuario = Depends(somente_secret
             s.commit()
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
-
 
 
 @app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é secretaria
@@ -136,7 +133,6 @@ def cadastrar_coordenadores(coordenador: CoordenadorCreate, token: Annotated[str
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
 
-
 @app.post("/professores/", status_code=status.HTTP_201_CREATED)
 def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_coordenador)): #quem pode cadastrar é o coordenador
     with Session(engine) as s:
@@ -153,7 +149,6 @@ def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_
             s.commit()
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
-
 
 
 @app.post("/alunos/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o coordenador
@@ -174,7 +169,6 @@ def cadastrar_alunos(aluno: AlunoCreate, usuario = Depends(somente_coordenador))
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
 
-
 @app.post("/turma/", status_code=status.HTTP_201_CREATED) #cadastrar turma pelo coordenador
 def cadastrar_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -188,8 +182,7 @@ def cadastrar_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
             s.commit()
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
-
-
+        
 
 @app.post("/aluno_turma/", status_code=status.HTTP_201_CREATED, )
 def cadastrar_aluno_turma(turma: TurmaCreate, usuario = Depends(somente_coordenador)):
@@ -204,8 +197,6 @@ def cadastrar_aluno_turma(turma: TurmaCreate, usuario = Depends(somente_coordena
         aluno_turma = Base.classes.turma_alunos(id_turmas = turma_BD.id_turmas,id_alunos = aluno_BD.id_alunos)
         s.add(aluno_turma)
         s.commit()
-
-
 
 
 @app.post("/disciplina/", status_code=status.HTTP_201_CREATED) #cadastrar disciplina pelo coordenador
