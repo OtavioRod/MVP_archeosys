@@ -8,8 +8,19 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone, date
 from fastapi.security import OAuth2PasswordBearer
 from mvp_archeosys.schemas import *
+from fastapi.middleware.cors import CORSMiddleware
+
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # ou ex: ["http://127.0.0.1:5500"] se quiser restringir
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -57,8 +68,14 @@ def somente_secretaria(usuario=Depends(get_usuario_logado)):
 
 def somente_coordenador(usuario=Depends(get_usuario_logado)):
     if usuario["tipo"] != "Coordenador":
-        raise HTTPException(status_code=403, detail="Apenas coordanadores podem realizar esta ação.")
+        raise HTTPException(status_code=403, detail="Apenas coordenadores podem realizar esta ação.")
     return usuario
+
+def somente_aluno(usuario=Depends(get_usuario_logado)):
+    if usuario["tipo"] != "Aluno":
+        raise HTTPException(status_code=403, detail="Apenas Aluno podem realizar esta ação.")
+    return usuario
+
 
 def somente_diretor(usuario=Depends(get_usuario_logado)):
     if usuario["tipo"] != "Diretor":
@@ -294,30 +311,30 @@ def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente
 
 @app.post("/presenca/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
-    with Session(engine) as session:
+    with Session(engine) as s:
         # Buscar o usuário aluno pelo nome informado em presenca.aluno
-        usuario_aluno = session.scalars(
+        usuario_aluno = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == presenca.aluno)
         ).first()
         if usuario_aluno is None:
             raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
 
         # Buscar a disciplina pelo nome informado em presenca.disciplina
-        disciplina = session.scalars(
+        disciplina = s.scalars(
             select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)
         ).first()
         if disciplina is None:
             raise HTTPException(status_code=409, detail="Disciplina não existe")
 
         # Buscar o aluno correspondente na tabela alunos usando o id_usuarios
-        aluno = session.scalars(
+        aluno = s.scalars(
             select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
         ).first()
         if aluno is None:
             raise HTTPException(status_code=404, detail="Aluno não encontrado")
         
         # Verificar se a presença já foi cadastrada para o aluno, disciplina e data atual
-        presenca_existente = session.scalars(
+        presenca_existente = s.scalars(
             select(Base.classes.presencas).where(
                 (Base.classes.presencas.id_alunos == aluno.id_alunos) &
                 (Base.classes.presencas.data == date.today()) &
@@ -335,26 +352,26 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
             presente=presenca.presente,
             justificativa=presenca.justificativa
         )
-        session.add(nova_presenca)
-        session.commit()
+        s.add(nova_presenca)
+        s.commit()
         
         return {"message": "Presença cadastrada com sucesso"}
 
 @app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
     with Session(engine) as s:
-        usuario_aluno = session.scalars(
+        usuario_aluno = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
         ).first()
         if usuario_aluno is None:
             raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
-        aluno = session.scalars(
+        aluno = s.scalars(
             select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
         ).first()
         if aluno is None:
             raise HTTPException(status_code=409, detail="aluno inválido")
 
-        disciplina = session.scalars(
+        disciplina = s.scalars(
             select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == notas.disciplina)
         ).first()
 
@@ -377,29 +394,25 @@ class RelatorioAula(BaseModel):
     recursos: str
 
 
-
 @app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somente_professor)):
     with Session(engine) as s:
-        professor = session.scalars(
-            select(Base.classes.professores).where(Base.classes.professores.id_professores == relatorioaula.professor)
+        usuario_professor = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == relatorioaula.professor)
         ).first()
-        disciplina = session.scalars(
-            select(Base.classes.disciplinas).where(Base.classes.disciplinas.id_disciplinas == relatorioaula.id_usuarios)
+        professor = s.scalars(
+            select(Base.classes.professores).where(Base.classes.professores.id_usuarios == usuario_professor.id_usuarios)
         ).first()
-        id_professor = int(professor.id_professores)
+
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == relatorioaula.disciplina)
+        ).first()
+        
         novo_relatorioaula = Base.classes.relatorios_aula(
-            id_professores = id_professor, id_disciplinas = disciplina.id_disciplinas, data = date.today(), conteudo = relatorioaula.conteudo, metodologia = relatorioaula.metodologia, recursos = relatorioaula.recursos
+            id_professores = professor.id_professores, id_disciplinas = disciplina.id_disciplinas, data = date.today(), conteudo = relatorioaula.conteudo, metodologia = relatorioaula.metodologia, recursos = relatorioaula.recursos
             )
         s.add(novo_relatorioaula)
         s.commit()
-
-
-
-
-
-
-
 
 '''
 class SolicitacaoCorrecaoCreate(BaseModel):#corrigir modelo
@@ -409,6 +422,37 @@ class SolicitacaoCorrecaoCreate(BaseModel):#corrigir modelo
     mensagem
     #status, default 'Pendente'
 '''
+
+@app.get("/alunorelatorio/")
+def relatorio_de_aluno(usuario=Depends(somente_aluno)):
+    with Session(engine) as s:
+        view_relatorio_aluno = Table(
+            "view_relatorio_aluno", metadata, autoload_with=engine
+        )
+
+        result = s.execute(
+            select(view_relatorio_aluno).where(view_relatorio_aluno.c.id_alunos == 1
+            )
+        ).fetchall()
+
+        return [dict(row._mapping) for row in result]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def get_db():
