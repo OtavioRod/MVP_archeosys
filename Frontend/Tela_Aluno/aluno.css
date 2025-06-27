@@ -1,0 +1,60 @@
+body {
+  font-family: arial, sans-serif;
+  margin: 0;
+  background-color: #f0f2f5;
+  color: #333;
+}
+
+.header {
+  background-color: #003366;
+  color: #fff;
+  padding: 20px;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 28px;
+}
+
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  background: white;
+  padding: 30px;
+  border-radius: 12px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.08);
+}
+
+h2 {
+  text-align: center;
+  color: #1b2a41;
+  margin-bottom: 30px;
+}
+
+#alunoInfo {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 40px;
+  font-size: 18px;
+  padding: 0 20px;
+}
+
+.card {
+  background-color: #e8eef4;
+  padding: 20px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.05);
+}
+
+.card strong {
+  color: #1b2a41;
+}
+
+footer {
+  text-align: center;
+  padding: 20px;
+  font-size: 14px;
+  color: #888;
+}

@@ -1,5 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from fastapi import Form
+from typing import Optional
 
 class LoginUsuario:
     def __init__(self, email: EmailStr = Form(...), senha: str = Form(...)):
@@ -26,20 +27,21 @@ class ProfessorCreate(BaseModel):
     nome: str
     email: EmailStr
     senha: str
-    escola: str
+    id_escola: int
 
 class AlunoCreate(BaseModel):
     nome: str
     email: EmailStr
     senha: str
-    escola: str
+    id_escola: int
 
 class TurmaCreate(BaseModel):
     nome_turma: str
     horario: str
     serie: str
     turno: str
-    escola: str
+    id_escola: int
+    #escola: str
 
 class AlunoTurmaCreate(BaseModel):
     aluno: str
@@ -48,7 +50,7 @@ class AlunoTurmaCreate(BaseModel):
 class DisciplinaCreate(BaseModel):
     nome: str
     turma: str
-    professor: str
+    id_professor: int
 
 class PresencaCreate(BaseModel):
     aluno: str
@@ -67,8 +69,11 @@ class NotasCreate(BaseModel):
     bimestre: int
     nota: float
 
-
-
-
+class RelatorioAula(BaseModel):
+    professor: str
+    disciplina: str
+    conteudo: Optional[str] = ""
+    metodologia: Optional[str] = ""
+    recursos: Optional[str] = ""
 
 

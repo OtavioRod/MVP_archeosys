@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArckeoSys | Diário do Professor</title>
+  <link rel="stylesheet" href="professor.css">
+</head>
+<body>
+  <header>
+    <h1>ArckeoSys</h1>
+    <div class="perfil">
+      <p><strong>Professor:</strong> <span id="professor-nome">Carregando...</span></p>
+      <p><strong>Escola:</strong> <span id="professor-escola">Carregando...</span></p>
+    </div>
+  </header>
+
+  <main>
+    <section class="selecao">
+      <label for="turma-select">Turma:</label>
+      <select id="turma-select"><option value="">Selecione</option></select>
+
+      <label for="disciplina-select">Disciplina:</label>
+      <select id="disciplina-select"><option value="">Selecione</option></select>
+
+      <button onclick="carregarAlunos()">Carregar Alunos</button>
+    </section>
+
+    <section id="alunos-section" style="display: none;">
+      <h2>Registro de Aula - <span id="data-aula"></span></h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Presente</th>
+            <th>Nota</th>
+            <th>Justificativa</th>
+          </tr>
+        </thead>
+        <tbody id="alunos-tbody"></tbody>
+      </table>
+
+      <div class="relatorio">
+        <h3>Relatório da Aula</h3>
+        <textarea id="conteudo" placeholder="Conteúdo abordado"></textarea>
+        <textarea id="metodologia" placeholder="Metodologia utilizada"></textarea>
+        <textarea id="recursos" placeholder="Recursos didáticos"></textarea>
+      </div>
+
+      <button class="enviar" onclick="enviarDiario()">Enviar Diário</button>
+    </section>
+  </main>
+
+  <script src="professor.js"></script>
+</body>
+</html>

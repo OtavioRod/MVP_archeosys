@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>ArckeoSys | Painel do Aluno</title>
+  <link rel="stylesheet" href="aluno.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>ArckeoSys</h1>
+    <p>Painel do Aluno</p>
+  </header>
+
+  <main class="container">
+    <!-- PERFIL -->
+    <section class="perfil">
+      <h2>Informações do Aluno</h2>
+      <div id="alunoInfo"></div>
+    </section>
+
+    <!-- NOTAS -->
+    <section class="notas">
+      <h2>Notas por Bimestre</h2>
+      <div id="notas"></div>
+    </section>
+
+    <!-- FALTAS (opcional / não usada no JS atual) -->
+    <section class="faltas">
+      <h2>Faltas por Disciplina</h2>
+      <p>(Funcionalidade em desenvolvimento)</p>
+    </section>
+
+    <!-- PRESENÇAS -->
+    <section class="frequencia">
+      <h2>Visualizar Presenças por Disciplina</h2>
+      <label for="disciplinaSelect">Escolha a Disciplina:</label>
+      <select id="disciplinaSelect">
+        <option value="">Selecione uma disciplina</option>
+      </select>
+    <h3>Visualizar Presenças por Disciplina</h3>
+<select id="disciplinaSelect">
+  <option value="">Selecione uma disciplina</option>
+</select>
+<div id="presencas"></div>
+  
+
+      <div id="presencas"></div>
+    </section>
+  </main>
+
+  <footer>
+    &copy; 2025 ArckeoSys - Sistema Integrado de Gestão Escolar
+  </footer>
+
+  <script src="aluno.js"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Diretor | ArckeoSys</title>
+  <link rel="stylesheet" href="diretor.css" />
+</head>
+<body>
+  <header>
+    <h1>ArckeoSys</h1>
+    <div class="user-info">
+      <p><strong id="nomeDiretor">Carregando...</strong></p>
+      <p><strong id="nomeEscola">Escola: Carregando...</strong></p>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Cadastro de Coordenador Pedagógico</h2>
+
+      <form id="formCoordenador" autocomplete="off">
+        <div class="form-group">
+          <label for="nomeCoord">Nome do Coordenador:</label>
+          <input type="text" id="nomeCoord" name="nomeCoord" placeholder="Ex: Zé das Couves" required />
+        </div>
+
+        <div class="form-group">
+          <label for="emailCoord">E-mail:</label>
+          <input type="email" id="emailCoord" name="emailCoord" placeholder="Ex: ZéCouve@escola.com" required />
+        </div>
+
+        <div class="form-group">
+          <label for="senhaCoord">Senha:</label>
+          <input type="password" id="senhaCoord" name="senhaCoord" placeholder="Crie uma senha" required />
+        </div>
+
+        <div class="form-group">
+          <label for="escolaCoord">Escola (preenchido automaticamente):</label>
+          <input type="text" id="escolaCoord" name="escolaCoord" readonly />
+        </div>
+
+        <button type="submit">Cadastrar Coordenador</button>
+        <p id="respostaCoord" class="resposta"></p>
+      </form>
+    </section>
+  </main>
+
+  <script src="diretor.js"></script>
+</body>
+</html>
