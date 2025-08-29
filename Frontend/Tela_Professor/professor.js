@@ -1,87 +1,69 @@
-const token = localStorage.getItem("token");
-const professorNome = localStorage.getItem("nome");/////////////
-const professorEscola = localStorage.getItem("usuario_escola");
+const token = localStorage.getItem("access_token");
+const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
+const professorNome = payload?.nome || "Professor";
+const professorEscola = payload?.escola || "Escola não identificada";
 
-// Ao carregar a página
 window.onload = () => {
-  document.getElementById("professor-nome").innerText = professorNome || "Professor";
-  document.getElementById("professor-escola").innerText = professorEscola || "Escola vinculada não encontrada";
+  document.getElementById("professor-nome").innerText = professorNome;
+  document.getElementById("professor-escola").innerText = professorEscola;
   carregarTurmasEDisciplinas();
 };
 
-// Carrega turmas e disciplinas do professor
 async function carregarTurmasEDisciplinas() {
   try {
     const response = await fetch("http://localhost:8000/professor/turmas_disciplinas", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { Authorization: `Bearer ${token}` },
     });
 
     const dados = await response.json();
     const turmaSelect = document.getElementById("turma-select");
     const disciplinaSelect = document.getElementById("disciplina-select");
 
-    dados.turmas.forEach((turma) => {
-      const option = document.createElement("option");
-      option.value = turma;
-      option.text = turma;
-      turmaSelect.appendChild(option);
+    dados.turmas?.forEach((turma) => {
+      turmaSelect.innerHTML += `<option value="${turma}">${turma}</option>`;
     });
 
-    dados.disciplinas.forEach((disciplina) => {
-      const option = document.createElement("option");
-      option.value = disciplina;
-      option.text = disciplina;
-      disciplinaSelect.appendChild(option);
+    dados.disciplinas?.forEach((disciplina) => {
+      disciplinaSelect.innerHTML += `<option value="${disciplina}">${disciplina}</option>`;
     });
-  } catch (error) {
+  } catch {
     alert("Erro ao carregar turmas e disciplinas.");
   }
 }
 
-// Carrega os alunos ao clicar em "Carregar Alunos"
 async function carregarAlunos() {
+  document.getElementById("data-aula").innerText = new Date().toLocaleDateString("pt-BR");
   const turma = document.getElementById("turma-select").value;
   const disciplina = document.getElementById("disciplina-select").value;
 
-  if (!turma || !disciplina) {
-    alert("Selecione a turma e a disciplina.");
-    return;
-  }
+  if (!turma || !disciplina) return alert("Selecione turma e disciplina.");
 
   try {
-    const response = await fetch(
-      `http://localhost:8000/professor/alunos?turma=${turma}&disciplina=${disciplina}`,
-      {
-        headers: { Authorization: `Bearer ${token}` },
-      }
-    );
+    const response = await fetch(`http://localhost:8000/professor/alunos?turma=${turma}&disciplina=${disciplina}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     const alunos = await response.json();
-    const tbody = document.querySelector("#alunos-tbody");
+    const tbody = document.getElementById("alunos-tbody");
     tbody.innerHTML = "";
 
     alunos.forEach((aluno) => {
       const row = document.createElement("tr");
-
       row.innerHTML = `
         <td>${aluno.nome}</td>
         <td><input type="checkbox" data-aluno="${aluno.nome}" class="presente-checkbox" /></td>
         <td><input type="number" min="0" max="10" step="0.1" data-aluno="${aluno.nome}" class="nota-input" /></td>
-        <td><input type="text" placeholder="Justificativa (se necessário)" data-aluno="${aluno.nome}" class="justificativa-input" /></td>
+        <td><input type="text" placeholder="Justificativa" data-aluno="${aluno.nome}" class="justificativa-input" /></td>
       `;
-
       tbody.appendChild(row);
     });
 
     document.getElementById("alunos-section").style.display = "block";
-  } catch (err) {
+  } catch {
     alert("Erro ao carregar alunos.");
   }
 }
 
-// Envia o diário completo
 async function enviarDiario() {
   const turma = document.getElementById("turma-select").value;
   const disciplina = document.getElementById("disciplina-select").value;
@@ -89,14 +71,12 @@ async function enviarDiario() {
   const metodologia = document.getElementById("metodologia").value;
   const recursos = document.getElementById("recursos").value;
 
-  const presencas = [];
-  const notas = [];
+  const presencas = [], notas = [];
 
-  document.querySelectorAll(".presente-checkbox").forEach((checkbox) => {
-    const aluno = checkbox.dataset.aluno;
-    const presente = checkbox.checked;
+  document.querySelectorAll(".presente-checkbox").forEach((cb) => {
+    const aluno = cb.dataset.aluno;
+    const presente = cb.checked;
     const justificativa = document.querySelector(`.justificativa-input[data-aluno="${aluno}"]`).value;
-
     presencas.push({ aluno, presente, disciplina, justificativa });
   });
 
@@ -109,51 +89,109 @@ async function enviarDiario() {
   });
 
   try {
-    // Enviar presenças
     for (const presenca of presencas) {
       await fetch("http://localhost:8000/presenca/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(presenca),
       });
     }
 
-    // Enviar notas
     for (const nota of notas) {
       await fetch("http://localhost:8000/notas/", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(nota),
       });
     }
 
-    // Enviar relatório
-    const relatorio = {
-      professor: professorNome || "",
-      disciplina,
-      conteudo,
-      metodologia,
-      recursos
-    };
-    console.log("Relatório a enviar:", relatorio);
+    const relatorio = { professor: professorNome, disciplina, conteudo, metodologia, recursos };
     await fetch("http://localhost:8000/relatorioaula/", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(relatorio),
     });
 
     alert("Diário enviado com sucesso!");
   } catch (err) {
-    console.error(err);
     alert("Erro ao enviar diário.");
+  }
+}
+
+async function mostrarVisualizacaoNotas() {
+  const turma = document.getElementById("turma-select").value;
+  const disciplina = document.getElementById("disciplina-select").value;
+
+  if (!turma || !disciplina) return alert("Selecione a turma e disciplina.");
+
+  try {
+    const response = await fetch(`http://localhost:8000/professor/alunos?turma=${turma}&disciplina=${disciplina}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const alunos = await response.json();
+    const tbody = document.getElementById("visualizacao-tbody");
+    tbody.innerHTML = "";
+
+    alunos.forEach((aluno) => {
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${aluno.nome}</td>
+        <td><input type="number" class="nota-editavel" data-aluno="${aluno.nome}" value="${aluno.nota || ''}" min="0" max="10" step="0.1" /></td>
+        <td><input type="checkbox" class="presenca-editavel" data-aluno="${aluno.nome}" ${aluno.presente ? "checked" : ""} /></td>
+      `;
+      tbody.appendChild(row);
+    });
+
+    document.getElementById("visualizacao-notas").style.display = "block";
+  } catch {
+    alert("Erro ao carregar visualização.");
+  }
+}
+
+async function atualizarNotasEPresencas() {
+  const disciplina = document.getElementById("disciplina-select").value;
+  const turma = document.getElementById("turma-select").value;
+
+  const notas = [], presencas = [];
+
+  document.querySelectorAll(".nota-editavel").forEach((input) => {
+    const aluno = input.dataset.aluno;
+    const nota = parseFloat(input.value);
+    if (!isNaN(nota)) {
+      notas.push({ aluno, disciplina, bimestre: 1, nota });
+    }
+  });
+
+  document.querySelectorAll(".presenca-editavel").forEach((input) => {
+    const aluno = input.dataset.aluno;
+    const presente = input.checked;
+    presencas.push({ aluno, disciplina, presente });
+  });
+
+  if (notas.length === 0 && presencas.length === 0) {
+    return alert("Nenhuma alteração detectada.");
+  }
+
+  try {
+    for (const nota of notas) {
+      await fetch("http://localhost:8000/notas/", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(nota),
+      });
+    }
+
+    for (const presenca of presencas) {
+      await fetch("http://localhost:8000/presenca/", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(presenca),
+      });
+    }
+
+    alert("Notas e presenças atualizadas com sucesso!");
+  } catch (err) {
+    alert("Erro ao atualizar dados.");
   }
 }

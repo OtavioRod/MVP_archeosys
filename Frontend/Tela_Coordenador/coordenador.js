@@ -86,5 +86,33 @@ document.addEventListener("DOMContentLoaded", () => {
     turma: fd.get("turma"),
     id_professor: parseInt(fd.get("id_professor")),
   }));
-});
 
+  enviarFormulario("formTurma", "/turma/", (fd) => ({
+    nome_turma: fd.get("nome_turma"),
+    serie: fd.get("serie"),
+    turno: fd.get("turno"),
+    horario: fd.get("horario"),
+    id_escola: escolaUsuario,
+  }));
+
+  enviarFormulario("formProfessor", "/professores/", (fd) => ({
+  nome: fd.get("nome"),
+  email: fd.get("email"),
+  senha: fd.get("senha"),
+  id_escola: escolaUsuario,
+  }));
+
+  // Cadastrar Aluno
+  enviarFormulario("formAluno", "/alunos/", (fd) => ({
+    nome: fd.get("nome"),
+    email: fd.get("email"),
+    senha: fd.get("senha"),
+    id_escola: escolaUsuario,
+  }));
+
+  // Vincular Aluno à Turma
+  enviarFormulario("formAlunoTurma", "/aluno_turma/", (fd) => ({
+    aluno: fd.get("aluno"),
+    turma: fd.get("turma"),
+  }));
+});

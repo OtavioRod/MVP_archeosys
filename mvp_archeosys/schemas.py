@@ -56,7 +56,7 @@ class PresencaCreate(BaseModel):
     aluno: str
     disciplina: str
     presente: bool
-    justificativa: str
+    justificativa: Optional[str] = None
 
 class SecretariaCreate(BaseModel):
     nome: str

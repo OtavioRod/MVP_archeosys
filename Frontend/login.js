@@ -22,6 +22,8 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     console.log("Received login data:", data);
 
     const token = data.access_token;
+    localStorage.setItem("token", token);
+
     console.log("teste 2:", data);
     const payload = JSON.parse(atob(token.split('.')[1]));
 

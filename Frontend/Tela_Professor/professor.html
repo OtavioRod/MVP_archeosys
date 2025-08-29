@@ -14,6 +14,7 @@
       <p><strong>Escola:</strong> <span id="professor-escola">Carregando...</span></p>
     </div>
   </header>
+  
 
   <main>
     <section class="selecao">
@@ -49,6 +50,27 @@
 
       <button class="enviar" onclick="enviarDiario()">Enviar Diário</button>
     </section>
+
+        <section id="visualizacao-notas" style="display: none;">
+      <h2>Visualização de Notas e Presença</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Aluno</th>
+            <th>Nota</th>
+            <th>Presença</th>
+          </tr>
+        </thead>
+        <tbody id="visualizacao-tbody">
+        
+        </tbody>
+      </table>
+      <button onclick="atualizarNotasEPresencas()">Atualizar Notas e Presença</button>
+
+    </section>
+
+    <button onclick="mostrarVisualizacaoNotas()" style="margin-top: 20px;">Visualizar Notas e Presença</button>
+
   </main>
 
   <script src="professor.js"></script>
