@@ -35,7 +35,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://archeo_user:secretpassword@host.docker.internal:5400/archeodb"
+    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
