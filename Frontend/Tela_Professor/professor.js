@@ -1,6 +1,6 @@
-const token = localStorage.getItem("access_token");
+const token = localStorage.getItem("token");
 const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
-const professorNome = payload?.nome || "Professor";
+const professorNome = payload?.nome || "Professor não identificado";
 const professorEscola = payload?.escola || "Escola não identificada";
 
 window.onload = () => {
