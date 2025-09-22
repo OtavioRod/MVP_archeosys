@@ -11,6 +11,8 @@ from mvp_archeosys.schemas import *
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
+from sqlalchemy import func
+
 
 engine = None
 Base = None
@@ -74,14 +76,28 @@ def get_usuario_logado(access_token: str = Cookie(None)):
             SECRET_KEY,
             algorithms=[ALGORITHM]
         )
+
         usuario_id = payload.get("sub")
         tipo = payload.get("tipo")
+        email = payload.get("email")
+        nome = payload.get("nome")
+        escola = payload.get("escola")
+        id_escola = payload.get("id_escola")
+
         if not usuario_id or not tipo:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token inválido"
             )
-        return {"id": usuario_id, "tipo": tipo}
+
+        return {
+            "id": usuario_id,
+            "tipo": tipo,
+            "email": email,
+            "nome": nome,
+            "escola": escola,
+            "id_escola": id_escola
+        }
     except JWTError as e:
         print("JWT decoding error:", e)
         raise HTTPException(
@@ -448,6 +464,104 @@ def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente
         }
 
 
+
+
+@app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
+def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        # DEBUG: mostra payload recebido
+        print("DEBUG payload notas:", f"aluno={repr(notas.aluno)}", f"disciplina={repr(notas.disciplina)}", f"bimestre={notas.bimestre}", f"nota={notas.nota}")
+
+        aluno_field = notas.aluno
+
+        # 1) tenta interpretar como ID numérico primeiro
+        usuario_aluno = None
+        try:
+            aluno_id = int(aluno_field)
+            usuario_aluno = s.scalars(
+                select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == aluno_id)
+            ).first()
+        except Exception:
+            # não era número -> ignora
+            pass
+
+        # 2) se não achou por id, busca por nome normalizado (trim + case-insensitive)
+        if usuario_aluno is None:
+            nome_norm = (aluno_field or "").strip()
+            if not nome_norm:
+                raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Campo 'aluno' vazio")
+            usuario_aluno = s.scalars(
+                select(Base.classes.usuarios).where(
+                    func.lower(func.trim(Base.classes.usuarios.nome_usuarios)) == func.lower(nome_norm)
+                )
+            ).first()
+
+        # DEBUG: mostra o usuario encontrado (ou None)
+        print("DEBUG usuario_aluno:", getattr(usuario_aluno, "id_usuarios", None), getattr(usuario_aluno, "nome_usuarios", None))
+
+        if usuario_aluno is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário aluno não encontrado")
+
+        # 3) procura o registro em `alunos` para garantir que o usuário é aluno cadastrado
+        aluno = s.scalars(
+            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
+        ).first()
+
+        # DEBUG: mostra o aluno (ou None)
+        print("DEBUG aluno:", getattr(aluno, "id_alunos", None))
+
+        if aluno is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Usuário encontrado (id={usuario_aluno.id_usuarios}) mas não existe entrada em 'alunos'."
+            )
+
+        # 4) buscar disciplina (case-insensitive + trim)
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas).where(
+                func.lower(func.trim(Base.classes.disciplinas.nome_disciplina)) == func.lower((notas.disciplina or "").strip())
+            )
+        ).first()
+
+        # DEBUG: mostra disciplina
+        print("DEBUG disciplina:", getattr(disciplina, "id_disciplinas", None), getattr(disciplina, "nome_disciplina", None))
+
+        if disciplina is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Disciplina não encontrada")
+
+        # 5) validações de valores
+        if not (1 <= notas.bimestre <= 4):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Bimestre inválido (deve ser 1..4)")
+
+        if not (0 <= notas.nota <= 10):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Nota inválida (deve ser 0..10)")
+
+        # 6) checar nota existente (evita duplicidade)
+        nota_existente = s.scalars(
+            select(Base.classes.notas).where(
+                and_(
+                    Base.classes.notas.id_alunos == aluno.id_alunos,
+                    Base.classes.notas.id_disciplinas == disciplina.id_disciplinas,
+                    Base.classes.notas.bimestre == notas.bimestre
+                )
+            )
+        ).first()
+        if nota_existente:
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Nota já cadastrada para esse aluno, disciplina e bimestre")
+
+        # 7) inserir nova nota
+        nova_nota = Base.classes.notas(
+            id_usuarios=usuario_aluno.id_usuarios,
+            id_alunos=aluno.id_alunos,
+            id_disciplinas=disciplina.id_disciplinas,
+            bimestre=notas.bimestre,
+            nota=notas.nota
+        )
+        s.add(nova_nota)
+        s.commit()
+
+        return {"message": "Nota cadastrada com sucesso"}
+'''
 @app.post("/presenca/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
     with Session(engine) as s:
@@ -455,7 +569,7 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == presenca.aluno)
         ).first()
         if usuario_aluno is None:
-            raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
+            raise HTTPException(status_code=404, detail="Usuário aluno não encontrado, erro usuario_aluno")
 
         disciplina = s.scalars(
             select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)
@@ -467,8 +581,8 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
             select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
         ).first()
         if aluno is None:
-            raise HTTPException(status_code=404, detail="Aluno não encontrado")
-        
+            raise HTTPException(status_code=404, detail="Aluno não encontrado, erro aluno")
+
         presenca_existente = s.scalars(
             select(Base.classes.presencas).where(
                 (Base.classes.presencas.id_alunos == aluno.id_alunos) &
@@ -478,7 +592,7 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
         ).first()
         if presenca_existente is not None:
             raise HTTPException(status_code=409, detail="Presença já cadastrada")
-        
+
         nova_presenca = Base.classes.presencas(
             id_alunos=aluno.id_alunos,
             id_disciplinas=disciplina.id_disciplinas,
@@ -488,9 +602,9 @@ def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
         )
         s.add(nova_presenca)
         s.commit()
-        
+
         return {"message": "Presença cadastrada com sucesso"}
-    
+'''
 
 @app.put("/presenca/", status_code=status.HTTP_200_OK)  # Somente professor pode atualizar
 def atualizar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
@@ -505,7 +619,7 @@ def atualizar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
             select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
         ).first()
         if aluno is None:
-            raise HTTPException(status_code=409, detail="Aluno inválido")
+            raise HTTPException(status_code=409, detail=f"Aluno inválido {aluno}")
 
         disciplina = s.scalars(
             select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)
@@ -534,6 +648,17 @@ def atualizar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
 @app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
     with Session(engine) as s:
+
+
+        print("DEBUG payload notas:", notas)
+        print("DEBUG procurando usuario por nome:", notas.aluno)
+        print("DEBUG usuarios cols:", Base.classes.usuarios.__table__.columns.keys())
+        print("DEBUG alunos cols:", Base.classes.alunos.__table__.columns.keys())
+
+
+
+
+
         usuario_aluno = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
         ).first()
@@ -544,7 +669,7 @@ def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
             select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
         ).first()
         if aluno is None:
-            raise HTTPException(status_code=409, detail="aluno inválido")
+            raise HTTPException(status_code=409, detail=f"Aluno inválido {aluno}")
 
         disciplina = s.scalars(
             select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == notas.disciplina)
