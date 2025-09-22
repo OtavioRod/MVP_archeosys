@@ -57,10 +57,20 @@ button {
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  padding: 8px 12px;
 }
 
 button:hover {
   background-color: #0055aa;
+}
+
+.enviar {
+  background-color: #008000;
+  font-weight: bold;
+}
+
+.enviar:hover {
+  background-color: #00a000;
 }
 
 table {
@@ -100,4 +110,23 @@ textarea {
   border: 1px solid #cbd5e1;
   border-radius: 10px;
   background-color: #f1f5f9;
+}
+
+/* Nova área de feedback */
+#mensagem-feedback {
+  margin-top: 15px;
+  font-weight: bold;
+  display: none;
+}
+
+/* Botão de ação na tabela (Excluir) */
+.acao-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+}
+
+.acao-btn:hover {
+  color: red;
 }

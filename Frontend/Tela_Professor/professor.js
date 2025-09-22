@@ -1,6 +1,6 @@
-const token = localStorage.getItem("token");
+const token = localStorage.getItem("access_token");
 const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
-const professorNome = payload?.nome || "Professor não identificado";
+const professorNome = payload?.nome || "Professor";
 const professorEscola = payload?.escola || "Escola não identificada";
 
 window.onload = () => {
@@ -8,6 +8,18 @@ window.onload = () => {
   document.getElementById("professor-escola").innerText = professorEscola;
   carregarTurmasEDisciplinas();
 };
+
+// 🔹 Exibir mensagens de feedback
+function mostrarMensagem(texto, tipo = "sucesso") {
+  const msg = document.getElementById("mensagem-feedback");
+  msg.innerText = texto;
+  msg.style.display = "block";
+  msg.style.color = tipo === "sucesso" ? "green" : "red";
+
+  setTimeout(() => {
+    msg.style.display = "none";
+  }, 4000);
+}
 
 async function carregarTurmasEDisciplinas() {
   try {
@@ -27,7 +39,7 @@ async function carregarTurmasEDisciplinas() {
       disciplinaSelect.innerHTML += `<option value="${disciplina}">${disciplina}</option>`;
     });
   } catch {
-    alert("Erro ao carregar turmas e disciplinas.");
+    mostrarMensagem("Erro ao carregar turmas e disciplinas.", "erro");
   }
 }
 
@@ -36,7 +48,7 @@ async function carregarAlunos() {
   const turma = document.getElementById("turma-select").value;
   const disciplina = document.getElementById("disciplina-select").value;
 
-  if (!turma || !disciplina) return alert("Selecione turma e disciplina.");
+  if (!turma || !disciplina) return mostrarMensagem("Selecione turma e disciplina.", "erro");
 
   try {
     const response = await fetch(`http://localhost:8000/professor/alunos?turma=${turma}&disciplina=${disciplina}`, {
@@ -54,13 +66,14 @@ async function carregarAlunos() {
         <td><input type="checkbox" data-aluno="${aluno.nome}" class="presente-checkbox" /></td>
         <td><input type="number" min="0" max="10" step="0.1" data-aluno="${aluno.nome}" class="nota-input" /></td>
         <td><input type="text" placeholder="Justificativa" data-aluno="${aluno.nome}" class="justificativa-input" /></td>
+        <td><button class="acao-btn" onclick="deletarPresenca('${aluno.nome}')">🗑️</button></td>
       `;
       tbody.appendChild(row);
     });
 
     document.getElementById("alunos-section").style.display = "block";
   } catch {
-    alert("Erro ao carregar alunos.");
+    mostrarMensagem("Erro ao carregar alunos.", "erro");
   }
 }
 
@@ -112,9 +125,9 @@ async function enviarDiario() {
       body: JSON.stringify(relatorio),
     });
 
-    alert("Diário enviado com sucesso!");
+    mostrarMensagem("Diário enviado com sucesso!");
   } catch (err) {
-    alert("Erro ao enviar diário.");
+    mostrarMensagem("Erro ao enviar diário.", "erro");
   }
 }
 
@@ -122,7 +135,7 @@ async function mostrarVisualizacaoNotas() {
   const turma = document.getElementById("turma-select").value;
   const disciplina = document.getElementById("disciplina-select").value;
 
-  if (!turma || !disciplina) return alert("Selecione a turma e disciplina.");
+  if (!turma || !disciplina) return mostrarMensagem("Selecione a turma e disciplina.", "erro");
 
   try {
     const response = await fetch(`http://localhost:8000/professor/alunos?turma=${turma}&disciplina=${disciplina}`, {
@@ -137,21 +150,26 @@ async function mostrarVisualizacaoNotas() {
       const row = document.createElement("tr");
       row.innerHTML = `
         <td>${aluno.nome}</td>
-        <td><input type="number" class="nota-editavel" data-aluno="${aluno.nome}" value="${aluno.nota || ''}" min="0" max="10" step="0.1" /></td>
-        <td><input type="checkbox" class="presenca-editavel" data-aluno="${aluno.nome}" ${aluno.presente ? "checked" : ""} /></td>
+        <td>
+          <input type="number" class="nota-editavel" data-aluno="${aluno.nome}" value="${aluno.nota || ''}" min="0" max="10" step="0.1" />
+          <button class="acao-btn" onclick="deletarNota('${aluno.nome}')">🗑️</button>
+        </td>
+        <td>
+          <input type="checkbox" class="presenca-editavel" data-aluno="${aluno.nome}" ${aluno.presente ? "checked" : ""} />
+          <button class="acao-btn" onclick="deletarPresenca('${aluno.nome}')">🗑️</button>
+        </td>
       `;
       tbody.appendChild(row);
     });
 
     document.getElementById("visualizacao-notas").style.display = "block";
   } catch {
-    alert("Erro ao carregar visualização.");
+    mostrarMensagem("Erro ao carregar visualização.", "erro");
   }
 }
 
 async function atualizarNotasEPresencas() {
   const disciplina = document.getElementById("disciplina-select").value;
-  const turma = document.getElementById("turma-select").value;
 
   const notas = [], presencas = [];
 
@@ -170,7 +188,7 @@ async function atualizarNotasEPresencas() {
   });
 
   if (notas.length === 0 && presencas.length === 0) {
-    return alert("Nenhuma alteração detectada.");
+    return mostrarMensagem("Nenhuma alteração detectada.", "erro");
   }
 
   try {
@@ -190,8 +208,52 @@ async function atualizarNotasEPresencas() {
       });
     }
 
-    alert("Notas e presenças atualizadas com sucesso!");
+    mostrarMensagem("Notas e presenças atualizadas com sucesso!");
   } catch (err) {
-    alert("Erro ao atualizar dados.");
+    mostrarMensagem("Erro ao atualizar dados.", "erro");
+  }
+}
+
+async function deletarNota(aluno) {
+  const disciplina = document.getElementById("disciplina-select").value;
+
+  if (!confirm(`Deseja realmente excluir a nota de ${aluno}?`)) return;
+
+  try {
+    await fetch("http://localhost:8000/notas/", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ aluno, disciplina }),
+    });
+
+    mostrarMensagem("Nota excluída com sucesso!");
+    mostrarVisualizacaoNotas(); 
+  } catch (err) {
+    mostrarMensagem("Erro ao excluir nota.", "erro");
+  }
+}
+
+async function deletarPresenca(aluno) {
+  const disciplina = document.getElementById("disciplina-select").value;
+
+  if (!confirm(`Deseja realmente excluir a presença de ${aluno}?`)) return;
+
+  try {
+    await fetch("http://localhost:8000/presenca/", {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ aluno, disciplina }),
+    });
+
+    mostrarMensagem("Presença excluída com sucesso!");
+    mostrarVisualizacaoNotas(); 
+  } catch (err) {
+    mostrarMensagem("Erro ao excluir presença.", "erro");
   }
 }

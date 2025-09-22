@@ -9,24 +9,25 @@
 <body>
   <header>
     <h1>ArckeoSys</h1>
-    <div class="perfil">
+    <div class="info-professor">
       <p><strong>Professor:</strong> <span id="professor-nome">Carregando...</span></p>
       <p><strong>Escola:</strong> <span id="professor-escola">Carregando...</span></p>
     </div>
   </header>
   
-
   <main>
-    <section class="selecao">
+    <!-- Seleção de turma e disciplina -->
+    <section class="formulario">
       <label for="turma-select">Turma:</label>
       <select id="turma-select"><option value="">Selecione</option></select>
 
       <label for="disciplina-select">Disciplina:</label>
       <select id="disciplina-select"><option value="">Selecione</option></select>
 
-      <button onclick="carregarAlunos()">Carregar Alunos</button>
+      <button type="button" onclick="carregarAlunos()">Carregar Alunos</button>
     </section>
 
+    <!-- Registro de aula -->
     <section id="alunos-section" style="display: none;">
       <h2>Registro de Aula - <span id="data-aula"></span></h2>
       <table>
@@ -36,6 +37,7 @@
             <th>Presente</th>
             <th>Nota</th>
             <th>Justificativa</th>
+            <th>Ações</th> <!-- Adicionado para Delete -->
           </tr>
         </thead>
         <tbody id="alunos-tbody"></tbody>
@@ -48,10 +50,12 @@
         <textarea id="recursos" placeholder="Recursos didáticos"></textarea>
       </div>
 
-      <button class="enviar" onclick="enviarDiario()">Enviar Diário</button>
+      <button class="enviar" type="button" onclick="enviarDiario()">Enviar Diário</button>
+      <div id="mensagem-feedback" style="margin-top:15px; color: green; font-weight: bold;"></div>
     </section>
 
-        <section id="visualizacao-notas" style="display: none;">
+    <!-- Visualização de notas e presença -->
+    <section id="visualizacao-notas" style="display: none;">
       <h2>Visualização de Notas e Presença</h2>
       <table>
         <thead>
@@ -61,16 +65,14 @@
             <th>Presença</th>
           </tr>
         </thead>
-        <tbody id="visualizacao-tbody">
-        
-        </tbody>
+        <tbody id="visualizacao-tbody"></tbody>
       </table>
-      <button onclick="atualizarNotasEPresencas()">Atualizar Notas e Presença</button>
-
+      <button type="button" onclick="atualizarNotasEPresencas()">Atualizar Notas e Presença</button>
     </section>
 
-    <button onclick="mostrarVisualizacaoNotas()" style="margin-top: 20px;">Visualizar Notas e Presença</button>
-
+    <button type="button" onclick="mostrarVisualizacaoNotas()" style="margin-top: 20px;">
+      Visualizar Notas e Presença
+    </button>
   </main>
 
   <script src="professor.js"></script>
