@@ -8,6 +8,7 @@
 body {
   background-color: #f5f7fa;
   color: #1c1c1c;
+  line-height: 1.5;
 }
 
 header {
@@ -27,9 +28,13 @@ header h1 {
 }
 
 main {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 20px;
   justify-content: center;
   padding: 40px 20px;
+  max-width: 1200px;
+  margin: 0 auto;
 }
 
 .card {
@@ -38,13 +43,19 @@ main {
   border-radius: 10px;
   box-shadow: 0 0 10px rgba(0,0,0,0.1);
   width: 100%;
-  max-width: 500px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
 }
 
 .card h2 {
   margin-bottom: 20px;
   color: #1f2e4a;
   text-align: center;
+  font-size: 1.4rem;
 }
 
 .form-group {
@@ -55,6 +66,7 @@ main {
   display: block;
   font-weight: bold;
   margin-bottom: 5px;
+  color: #333;
 }
 
 .form-group input {
@@ -62,6 +74,13 @@ main {
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 6px;
+  outline: none;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+.form-group input:focus {
+  border-color: #003366;
+  box-shadow: 0 0 5px rgba(0, 51, 102, 0.3);
 }
 
 button {
@@ -73,16 +92,61 @@ button {
   border-radius: 6px;
   font-size: 1rem;
   cursor: pointer;
-  transition: background 0.3s ease;
+  transition: background 0.3s ease, transform 0.2s ease;
 }
 
 button:hover {
   background-color: #0055aa;
+  transform: scale(1.02);
 }
 
+button:active {
+  transform: scale(0.98);
+}
+
+/* Estilo para lista de coordenadores */
+#listaCoordenadores {
+  margin-top: 15px;
+  list-style: none;
+  padding: 0;
+}
+
+#listaCoordenadores li {
+  background: #f0f4f8;
+  padding: 10px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+  border: 1px solid #ddd;
+  font-size: 0.95rem;
+}
+
+/* Estilos de mensagens de resposta */
 .resposta {
   margin-top: 15px;
   font-weight: bold;
-  color: green;
   text-align: center;
+}
+
+.resposta.success {
+  color: green;
+}
+
+.resposta.error {
+  color: red;
+}
+
+/* Responsividade  */
+@media (max-width: 600px) {
+  header h1 {
+    font-size: 1.6rem;
+  }
+
+  .card {
+    padding: 20px;
+  }
+
+  button {
+    font-size: 0.95rem;
+    padding: 10px;
+  }
 }

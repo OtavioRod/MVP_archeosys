@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Diretor | ArckeoSys</title>
   <link rel="stylesheet" href="diretor.css" />
 </head>
+
 <body>
   <header>
     <h1>ArckeoSys</h1>
@@ -16,6 +18,7 @@
   </header>
 
   <main>
+
     <section class="card">
       <h2>Cadastro de Coordenador Pedagógico</h2>
 
@@ -27,7 +30,7 @@
 
         <div class="form-group">
           <label for="emailCoord">E-mail:</label>
-          <input type="email" id="emailCoord" name="emailCoord" placeholder="Ex: ZéCouve@escola.com" required />
+          <input type="email" id="emailCoord" name="emailCoord" placeholder="Ex: ze@escola.com" required />
         </div>
 
         <div class="form-group">
@@ -44,8 +47,64 @@
         <p id="respostaCoord" class="resposta"></p>
       </form>
     </section>
+
+
+    <section class="card">
+      <h2>Coordenadores Cadastrados</h2>
+      <button id="btnListar">📋 Listar Coordenadores</button>
+      <ul id="listaCoordenadores"></ul>
+    </section>
+
+
+    <section class="card">
+      <h2>Atualizar Coordenador</h2>
+      <form id="formUpdateCoord" autocomplete="off">
+        <div class="form-group">
+          <label for="emailAtual">E-mail atual:</label>
+          <input type="email" id="emailAtual" name="emailAtual" placeholder="E-mail atual do coordenador" required />
+        </div>
+
+        <div class="form-group">
+          <label for="novoNome">Novo Nome:</label>
+          <input type="text" id="novoNome" name="novoNome" placeholder="Novo nome" required />
+        </div>
+
+        <div class="form-group">
+          <label for="novoEmail">Novo E-mail:</label>
+          <input type="email" id="novoEmail" name="novoEmail" placeholder="Novo e-mail" required />
+        </div>
+
+        <div class="form-group">
+          <label for="novaSenha">Nova Senha:</label>
+          <input type="password" id="novaSenha" name="novaSenha" placeholder="Nova senha" required />
+        </div>
+        <!--
+        <div class="form-group">
+          <label for="novaEscola">Nova Escola:</label>
+          <input type="text" id="novaEscola" name="novaEscola" placeholder="Nova escola" required />
+        </div>
+-->
+        <button type="submit">Atualizar Coordenador</button>
+        <p id="respostaUpdate" class="resposta"></p>
+      </form>
+    </section>
+
+
+    <section class="card">
+      <h2>Excluir Coordenador</h2>
+      <form id="formDeleteCoord" autocomplete="off">
+        <div class="form-group">
+          <label for="emailDelete">E-mail do Coordenador:</label>
+          <input type="email" id="emailDelete" name="emailDelete" placeholder="E-mail do coordenador" required />
+        </div>
+
+        <button type="submit">Excluir Coordenador</button>
+        <p id="respostaDelete" class="resposta"></p>
+      </form>
+    </section>
   </main>
 
   <script src="diretor.js"></script>
 </body>
+
 </html>

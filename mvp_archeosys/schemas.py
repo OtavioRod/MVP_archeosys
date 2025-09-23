@@ -23,6 +23,15 @@ class CoordenadorCreate(BaseModel):
     senha: str
     escola: str
 
+class CoordenadorDelete(BaseModel):
+    email: EmailStr
+
+class CoordenadorUpdate(BaseModel):
+    email_atual: EmailStr
+    novo_nome: str
+    novo_email: EmailStr
+    novo_senha: str
+
 class ProfessorCreate(BaseModel):
     nome: str
     email: EmailStr
@@ -75,5 +84,9 @@ class RelatorioAula(BaseModel):
     conteudo: Optional[str] = ""
     metodologia: Optional[str] = ""
     recursos: Optional[str] = ""
+
+
+class NotasDelete(BaseModel):
+    aluno: str
 
 

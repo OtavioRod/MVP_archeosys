@@ -1,4 +1,4 @@
-const token = localStorage.getItem("access_token");
+const token = localStorage.getItem("token");
 const payload = token ? JSON.parse(atob(token.split(".")[1])) : null;
 const professorNome = payload?.nome || "Professor";
 const professorEscola = payload?.escola || "Escola não identificada";
@@ -230,7 +230,7 @@ async function deletarNota(aluno) {
     });
 
     mostrarMensagem("Nota excluída com sucesso!");
-    mostrarVisualizacaoNotas(); 
+    mostrarVisualizacaoNotas();
   } catch (err) {
     mostrarMensagem("Erro ao excluir nota.", "erro");
   }
@@ -248,11 +248,12 @@ async function deletarPresenca(aluno) {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ aluno, disciplina }),
+      body: JSON.stringify({ aluno }),
+      //body: JSON.stringify({ aluno, disciplina }),
     });
 
     mostrarMensagem("Presença excluída com sucesso!");
-    mostrarVisualizacaoNotas(); 
+    mostrarVisualizacaoNotas();
   } catch (err) {
     mostrarMensagem("Erro ao excluir presença.", "erro");
   }

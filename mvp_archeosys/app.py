@@ -1,7 +1,8 @@
+from turtle import update
 from typing import Annotated
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine, select,MetaData, Table, select, distinct
+from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update
 from fastapi import FastAPI, HTTPException, status, Depends, Security, Form, Response, Cookie, Request, Body
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
@@ -191,7 +192,7 @@ def login(response: Response,username: EmailStr = Form(...), password: str = For
             "nome": nome_usuario,
             "escola": nome_escola,
             "id_escola": id_escola,
-            "exp": datetime.now(timezone.utc) + timedelta(hours=1)
+            "exp": datetime.now(timezone.utc) + timedelta(hours=24)
         }
 
         
@@ -246,6 +247,81 @@ def cadastrar_diretores(diretor: DiretorCreate, usuario = Depends(somente_secret
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="result is none")
 
+#listar coordenadores da escola do diretor logado
+@app.get("/diretores/coordenadores", status_code=status.HTTP_200_OK)
+def listar_coordenadores_escola(usuario = Depends(somente_diretor)):
+    usuarios = Base.classes.usuarios
+    coordenadores = Base.classes.coordenadores
+
+    # pega id_escola do objeto/ dict (suporta ambos)
+    id_escola = usuario.get("id_escola") if isinstance(usuario, dict) else getattr(usuario, "id_escola", None)
+    if id_escola is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="id_escola não encontrado no usuário")
+
+    stmt = (
+        select(usuarios.nome_usuarios, usuarios.email)
+        .join(coordenadores, coordenadores.id_usuarios == usuarios.id_usuarios)
+        .where(usuarios.tipo == "Coordenador",coordenadores.id_escolas == id_escola)
+    )
+
+    with Session(engine) as s:
+        result = s.execute(stmt).all()
+        lista_usuarios_coordenadores = [{"nome_usuarios": row[0], "email": row[1]} for row in result]
+
+    return JSONResponse(status_code=status.HTTP_200_OK, content=lista_usuarios_coordenadores)
+
+#deletar coordenadores através da tela do diretor
+@app.delete("/diretores/coordenadores", status_code=status.HTTP_200_OK)
+def remover_coordenadores(coordenador: CoordenadorDelete, usuario = Depends(somente_diretor)):
+    with Session(engine) as s:
+        usuario_coordenador = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.email == coordenador.email)
+        ).first()
+        if usuario_coordenador is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="usuário com email do coordenador não encontrado")
+        
+        coordenador_BD = s.scalars(
+            select(Base.classes.coordenadores).where(Base.classes.coordenadores.id_usuarios == usuario_coordenador.id_usuarios)
+        ).first()
+        if coordenador_BD is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="coordenador não encontrado")
+        s.delete(coordenador_BD)
+        s.delete(usuario_coordenador)
+        s.commit()
+        return {"detail": f"Coordenador '{coordenador.email}' removido com sucesso"}
+
+#mudar dados do coordenador através da tela do diretor
+@app.put("/diretores/coordenadores", status_code=status.HTTP_200_OK)
+def atualizar_coordenadores(coordenador: CoordenadorUpdate, usuario = Depends(somente_diretor)):
+    with Session(engine) as s:
+        usuario_coordenador = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.email == coordenador.email_atual)
+        ).first()
+        if usuario_coordenador is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="usuário com email do coordenador não encontrado")
+        
+        coordenador_BD = s.scalars(
+            select(Base.classes.coordenadores).where(Base.classes.coordenadores.id_usuarios == usuario_coordenador.id_usuarios)
+        ).first()
+        if coordenador_BD is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="coordenador não encontrado")
+
+        usuario_coordenador.nome_usuarios = coordenador.novo_nome
+        usuario_coordenador.email = coordenador.novo_email
+        usuario_coordenador.senha = coordenador.novo_senha
+        
+        #s.execute(
+        #    update(Base.classes.usuarios)
+        #    .where(Base.classes.usuarios.email == coordenador.email_atual)
+        #    .values(
+        #        nome=coordenador.novo_nome,
+        #        email=coordenador.novo_email,
+        #        senha=coordenador.novo_senha
+        #    )
+        #)
+        s.commit()
+        return {"detail": f"Coordenador '{coordenador.email_atual}' atualizado com sucesso"}
+
 
 @app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
 def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(somente_diretor)):
@@ -262,6 +338,7 @@ def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(so
                 novo_coordenador = Base.classes.coordenadores(id_usuarios = novo_usuario.id_usuarios, id_escolas = escola.id_escolas)
                 s.add(novo_coordenador)
                 s.commit()
+                return {"detail": f"Coordenador '{coordenador.email}' removido com sucesso"}
             else:
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT)
         else:
@@ -277,14 +354,13 @@ def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_
         ).first()
         if result is None:
             novo_usuario = Base.classes.usuarios(nome_usuarios = professor.nome, email = professor.email, senha = professor.senha, tipo = 'Professor')
-            
             try:
                 s.add(novo_usuario)
                 s.flush()
             except Exception as e:
                 s.rollback()
                 raise HTTPException(status_code=500, detail=str(e))
-            
+
             escola = s.scalars(select(Base.classes.escolas).where(Base.classes.escolas.id_escolas == professor.id_escola)).first()
             novo_professor = Base.classes.professores(id_usuarios = novo_usuario.id_usuarios, id_escolas = escola.id_escolas)
 
@@ -294,8 +370,8 @@ def cadastrar_professores(professor: ProfessorCreate, usuario = Depends(somente_
             except Exception as e:
                 s.rollback()
                 raise HTTPException(status_code=500, detail=str(e))
-            
-            
+
+
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT)
 
@@ -539,11 +615,9 @@ def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
         # 6) checar nota existente (evita duplicidade)
         nota_existente = s.scalars(
             select(Base.classes.notas).where(
-                and_(
                     Base.classes.notas.id_alunos == aluno.id_alunos,
                     Base.classes.notas.id_disciplinas == disciplina.id_disciplinas,
                     Base.classes.notas.bimestre == notas.bimestre
-                )
             )
         ).first()
         if nota_existente:
@@ -561,50 +635,7 @@ def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
         s.commit()
 
         return {"message": "Nota cadastrada com sucesso"}
-'''
-@app.post("/presenca/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
-def cadastrar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
-    with Session(engine) as s:
-        usuario_aluno = s.scalars(
-            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == presenca.aluno)
-        ).first()
-        if usuario_aluno is None:
-            raise HTTPException(status_code=404, detail="Usuário aluno não encontrado, erro usuario_aluno")
 
-        disciplina = s.scalars(
-            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == presenca.disciplina)
-        ).first()
-        if disciplina is None:
-            raise HTTPException(status_code=409, detail="Disciplina não existe")
-
-        aluno = s.scalars(
-            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
-        ).first()
-        if aluno is None:
-            raise HTTPException(status_code=404, detail="Aluno não encontrado, erro aluno")
-
-        presenca_existente = s.scalars(
-            select(Base.classes.presencas).where(
-                (Base.classes.presencas.id_alunos == aluno.id_alunos) &
-                (Base.classes.presencas.data == date.today()) &
-                (Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas)
-            )
-        ).first()
-        if presenca_existente is not None:
-            raise HTTPException(status_code=409, detail="Presença já cadastrada")
-
-        nova_presenca = Base.classes.presencas(
-            id_alunos=aluno.id_alunos,
-            id_disciplinas=disciplina.id_disciplinas,
-            data=date.today(),
-            presente=presenca.presente,
-            justificativa=presenca.justificativa
-        )
-        s.add(nova_presenca)
-        s.commit()
-
-        return {"message": "Presença cadastrada com sucesso"}
-'''
 
 @app.put("/presenca/", status_code=status.HTTP_200_OK)  # Somente professor pode atualizar
 def atualizar_presenca(presenca: PresencaCreate, usuario=Depends(somente_professor)):
@@ -648,17 +679,6 @@ def atualizar_presenca(presenca: PresencaCreate, usuario=Depends(somente_profess
 @app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
     with Session(engine) as s:
-
-
-        print("DEBUG payload notas:", notas)
-        print("DEBUG procurando usuario por nome:", notas.aluno)
-        print("DEBUG usuarios cols:", Base.classes.usuarios.__table__.columns.keys())
-        print("DEBUG alunos cols:", Base.classes.alunos.__table__.columns.keys())
-
-
-
-
-
         usuario_aluno = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
         ).first()
@@ -705,36 +725,49 @@ def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
         s.add(nova_nota)
         s.commit()
 
-'''
-@app.post("/notas/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
-def cadastrar_notas(notas: NotasCreate, usuario=Depends(somente_professor)):
+@app.delete("/notas/", status_code=status.HTTP_201_CREATED)
+def deletar_notas(AlunoNome: NotasDelete, usuario=Depends(somente_professor)):
     with Session(engine) as s:
         usuario_aluno = s.scalars(
-            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == notas.aluno)
+            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == AlunoNome.aluno and Base.classes.usuarios.tipo == "Aluno")
         ).first()
         if usuario_aluno is None:
             raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
+
+        nota_aluno = s.scalars(
+            select(Base.classes.notas).where(Base.classes.notas.id_usuarios == usuario_aluno)
+        ).first()
+        if nota_aluno is None:
+            raise HTTPException(status_code=404, detail="nota não encontrada")
+        if usuario_aluno is None:
+            raise HTTPException(status_code=404, detail="presenca não encontrada")
+
+        s.delete(nota_aluno)
+        s.commit()
+
+@app.delete("/presenca/", status_code=status.HTTP_201_CREATED)
+def deletar_presenca(AlunoNome: NotasDelete, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        aluno_usuario = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == AlunoNome.aluno and Base.classes.usuarios.tipo == "Aluno")
+        ).first()
+        if aluno_usuario is None:
+            raise HTTPException(status_code=404, detail="Usuário aluno não encontrado")
+
         aluno = s.scalars(
-            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios)
+            select(Base.classes.alunos).where(Base.classes.alunos.id_usuarios == aluno_usuario.id_usuarios)
         ).first()
         if aluno is None:
-            raise HTTPException(status_code=409, detail="aluno inválido")
-
-        disciplina = s.scalars(
-            select(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == notas.disciplina)
-        ).first()
-
-        if 1 < notas.bimestre <= 4:
-            raise HTTPException(status_code=409, detail="bimestre menor que 1, ou maior que 4, inválido")
-
-        if 0 < notas.nota > 10:
-            raise HTTPException(status_code=409, detail="nota menor que 0, ou maior que 10, inválido")
+            raise HTTPException(status_code=404, detail="Aluno não encontrado")
         
-        nova_nota = Base.classes.notas(id_usuarios = usuario_aluno.id_usuarios, id_alunos = aluno.id_alunos, id_disciplinas = disciplina.id_disciplinas, bimestre = notas.bimestre, nota = notas.nota)
+        presenca_aluno = s.scalars(
+            select(Base.classes.presencas).where(Base.classes.presencas.id_alunos == aluno.id_alunos)
+        ).first()
+        if presenca_aluno is None:
+            raise HTTPException(status_code=404, detail="presenca não encontrada")
 
-        s.add(nova_nota)
+        s.delete(presenca_aluno)
         s.commit()
-'''
 
 @app.put("/notas/", status_code=status.HTTP_200_OK)  # Somente professor pode atualizar
 def atualizar_nota(notas: NotasCreate, usuario=Depends(somente_professor)):
@@ -875,7 +908,7 @@ def listar_disciplinas_professor(usuario=Depends(somente_professor)):
             })
 
         return resultado
-    
+
 
 @app.get("/alunos/turma/{id_turma}", status_code=status.HTTP_200_OK)
 def listar_alunos_da_turma(id_turma: int, usuario=Depends(somente_professor)):
@@ -926,7 +959,7 @@ def notas_aluno(usuario=Depends(somente_aluno)):
             })
 
         return resultado
-    
+
 @app.get("/aluno/perfil")
 def perfil_aluno(usuario=Depends(somente_aluno)):
     with Session(engine) as s:
@@ -967,7 +1000,7 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
             "turma": turma.nome_turma,
             "escola": escola.nome,
         }
-    
+
 
 
 
@@ -1006,40 +1039,6 @@ def listar_turmas_disciplinas(usuario = Depends(somente_professor)):
         }
 
 
-
-'''
-@app.get("/professor/turmas_disciplinas")
-def listar_turmas_disciplinas(usuario = Depends(somente_professor)):
-    with Session(engine) as s:
-        prof = s.scalars(
-            select(Base.classes.professores)
-            .where(Base.classes.professores.id_usuarios == int(usuario["id"]))
-        ).first()
-
-        if not prof:
-            raise HTTPException(status_code=404, detail="Professor não encontrado")
-
-        disciplinas = s.scalars(
-            select(Base.classes.disciplinas).where(Base.classes.disciplinas.id_professores == prof.id_professores)
-        ).all()
-
-        lista_disciplinas = []
-        lista_turmas = set()
-
-        for d in disciplinas:
-            lista_disciplinas.append(d.nome_disciplina)
-
-            turma = s.scalars(
-                select(Base.classes.turmas).where(Base.classes.turmas.id_turmas == d.id_turmas)
-            ).first()
-            if turma:
-                lista_turmas.add(turma.nome_turma)
-
-        return {
-            "turmas": list(lista_turmas),
-            "disciplinas": lista_disciplinas
-        }
-'''
 @app.get("/professor/alunos")
 def listar_alunos(turma: str, disciplina: str, usuario=Depends(somente_professor)):
     with Session(engine) as s:
@@ -1073,7 +1072,7 @@ def listar_alunos(turma: str, disciplina: str, usuario=Depends(somente_professor
             select(Base.classes.turma_alunos)
             .where(Base.classes.turma_alunos.id_turmas == turma_obj.id_turmas)
         ).all()
-        
+
         alunos = []
         for ta in turma_alunos:
             aluno = s.scalars(
@@ -1141,7 +1140,7 @@ def listar_disciplinas_do_aluno(usuario = Depends(get_usuario_logado)):
         ).all()
 
         return [d.nome_disciplina for d in disciplinas]
-    
+
 @app.get("/aluno/presencas")
 def listar_presencas(disciplina: str, usuario = Depends(get_usuario_logado)):
     if usuario["tipo"] != "Aluno":
@@ -1171,7 +1170,7 @@ def listar_presencas(disciplina: str, usuario = Depends(get_usuario_logado)):
             "presente": p.presente,
             "justificativa": p.justificativa
         } for p in presencas]
-    
+
 @app.get("/escolacoordenador/")
 def get_dados_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1212,7 +1211,7 @@ def perfil_professor(usuario=Depends(somente_professor)):
             "nome": prof.nome_usuarios,
             "id_escola": prof.id_escolas
         }
-    
+
 @app.get("/coordenador/professores/", status_code=status.HTTP_200_OK)
 def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
