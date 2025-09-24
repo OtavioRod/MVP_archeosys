@@ -1,6 +1,4 @@
-REM .venv\Scripts\activate.bat
-REM poetry install
-REM poetry run fastapi dev mvp_archeosys/app.py
+python -m venv .venv
 
 call .venv\Scripts\activate.bat
 
