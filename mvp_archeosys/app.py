@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func
 
-
+#teste
 engine = None
 Base = None
 SessionLocal = None
