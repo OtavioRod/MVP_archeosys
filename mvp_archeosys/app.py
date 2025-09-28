@@ -38,7 +38,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:database%40@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
@@ -975,12 +975,12 @@ def notas_aluno(usuario=Depends(somente_aluno)):
         ).all()
 
         resultado = []
-        for n in notas:
-            disciplina = s.get(Base.classes.disciplinas, n.id_disciplinas)
+        for nota in notas:
+            disciplina = s.get(Base.classes.disciplinas, nota.id_disciplinas)
             resultado.append({
                 "disciplina": disciplina.nome_disciplina,
-                "bimestre": n.bimestre,
-                "nota": n.nota
+                "bimestre": nota.bimestre,
+                "nota": nota.nota
             })
 
         return resultado
