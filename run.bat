@@ -7,3 +7,5 @@ poetry install
 
 REM Run FastAPI app using Poetry
 poetry run fastapi dev mvp_archeosys/app.py
+
+pause
