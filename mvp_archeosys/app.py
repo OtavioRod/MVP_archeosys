@@ -28,7 +28,7 @@ app.mount("/app", StaticFiles(directory="Frontend", html=True), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,7 +83,7 @@ prepare_base()
 SECRET_KEY = "tbkMfMPLvnJUKPAXwsTWs9Q8H180vbquMUoVbXCA6cA="
 ALGORITHM = "HS256"
 
-
+'''def get_usuario_logado(access_token: str = Depends(oauth2_scheme)):'''
 def get_usuario_logado(access_token: str = Cookie(None)):
     if not access_token:
         raise HTTPException(
