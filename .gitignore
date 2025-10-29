@@ -1,3 +1,10 @@
-/.venv
+# Cache do Python
 __pycache__/
 *.pyc
+
+# Ambiente virtual
+.venv/
+
+# Configurações locais
+.env
+.vscode/
