@@ -174,3 +174,147 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+const APII_URL = "https://meuservidor.com/api/escolas"; // SUBSTITUIR API
+
+const tabela = document.getElementById("tabela");
+const modalEditar = document.getElementById("modalEditar");
+const modalExcluir = document.getElementById("modalExcluir");
+let idSelecionado = null;
+
+// ============================
+// Carregar dados da API
+// ============================
+
+async function carregarEscolas() {
+  const resp = await fetch(API_URL);
+  const escolas = await resp.json();
+  tabela.innerHTML = "";
+
+  escolas.forEach(e => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${e.escola || ""}</td>
+      <td>${e.endereco || ""}</td>
+      <td>${e.diretor?.nome || ""}</td>
+      <td>${e.diretor?.email || ""}</td>
+      <td>
+        <button data-id="${e.id}" class="editar">Editar</button>
+        <button data-id="${e.id}" class="excluir">Excluir</button>
+      </td>`;
+    tabela.appendChild(tr);
+  });
+}
+carregarEscolas();
+
+// ============================
+// Criar nova escola
+// ============================
+
+
+document.getElementById("formEscola").addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const data = {
+    escola: nomeEscola.value,
+    endereco: enderecoEscola.value,
+    diretor: { nome: nomeDiretor.value, email: emailDiretor.value }
+  };
+  await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  ev.target.reset();
+  carregarEscolas();
+});
+
+// ============================
+// Ações da tabela
+// ============================
+
+
+tabela.addEventListener("click", async (ev) => {
+  if (ev.target.classList.contains("editar")) {
+    const id = ev.target.dataset.id;
+    const resp = await fetch(`${API_URL}/${id}`);
+    const e = await resp.json();
+    idSelecionado = id;
+
+    editId.value = id;
+    editEscola.value = e.escola;
+    editEndereco.value = e.endereco;
+    editDiretor.value = e.diretor?.nome || "";
+    editEmail.value = e.diretor?.email || "";
+
+    modalEditar.showModal();
+  }
+
+  if (ev.target.classList.contains("excluir")) {
+    idSelecionado = ev.target.dataset.id;
+    modalExcluir.showModal();
+  }
+});
+
+// ============================
+// Salvar edição
+// ============================
+
+
+formEditar.addEventListener("submit", async (ev) => {
+  ev.preventDefault();
+  const data = {
+    escola: editEscola.value,
+    endereco: editEndereco.value,
+    diretor: { nome: editDiretor.value, email: editEmail.value }
+  };
+  await fetch(`${API_URL}/${editId.value}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data)
+  });
+  modalEditar.close();
+  carregarEscolas();
+});
+
+fecharEditar.addEventListener("click", () => modalEditar.close());
+
+// ============================
+// Modal de exclusão
+// ============================
+btnExcluirEscola.onclick = async () => {
+  await fetch(`${API_URL}/${idSelecionado}`, { method: "DELETE" });
+  modalExcluir.close();
+  carregarEscolas();
+};
+
+btnExcluirEndereco.onclick = async () => {
+  await fetch(`${API_URL}/${idSelecionado}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ endereco: null })
+  });
+  modalExcluir.close();
+  carregarEscolas();
+};
+
+btnExcluirDiretor.onclick = async () => {
+  await fetch(`${API_URL}/${idSelecionado}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ diretor: null })
+  });
+  modalExcluir.close();
+  carregarEscolas();
+};
+
+btnExcluirEmail.onclick = async () => {
+  await fetch(`${API_URL}/${idSelecionado}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ diretor: { email: null } })
+  });
+  modalExcluir.close();
+  carregarEscolas();
+};
+
+fecharExcluir.addEventListener("click", () => modalExcluir.close());
