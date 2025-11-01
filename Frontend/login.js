@@ -7,10 +7,10 @@ document.getElementById("loginForm").addEventListener("submit", async function (
 
   try {
     const response = await fetch("http://localhost:8000/token/", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    credentials: "include",
-    body: new URLSearchParams({ username: email, password: senha })
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      credentials: "include",
+      body: new URLSearchParams({ username: email, password: senha })
     });
 
     if (!response.ok) {
@@ -29,13 +29,13 @@ document.getElementById("loginForm").addEventListener("submit", async function (
 
     const tipo = payload.tipo?.trim();
 
-    
 
-    console.log("log do tipo:",tipo);
+
+    console.log("log do tipo:", tipo);
     switch (tipo) {
       case "Professor":
         window.location.href = "/app/Tela_Professor/professor.html";
-      break;
+        break;
 
     }
 
@@ -63,5 +63,25 @@ document.getElementById("loginForm").addEventListener("submit", async function (
   } catch (error) {
     console.error(error);
     mensagemErro.textContent = "Erro ao conectar com o servidor.";
+  }
+});
+
+const emailInput = document.getElementById("email");
+const domains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "example.com"];
+
+emailInput.addEventListener("keydown", (e) => {
+  const value = emailInput.value;
+  const atIndex = value.indexOf("@");
+
+  // When user presses TAB after typing "@"
+  if (atIndex > -1 && e.key === "Tab") {
+    e.preventDefault(); // prevent tab from changing focus
+    const typedDomain = value.slice(atIndex + 1).toLowerCase();
+
+    // Find first matching domain
+    const match = domains.find(domain => domain.startsWith(typedDomain));
+    if (match) {
+      emailInput.value = value.slice(0, atIndex + 1) + match;
+    }
   }
 });

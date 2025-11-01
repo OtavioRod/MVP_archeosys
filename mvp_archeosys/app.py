@@ -2,7 +2,7 @@ from turtle import update
 from typing import Annotated
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update
+from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update, text
 from fastapi import FastAPI, HTTPException, status, Depends, Security, Form, Response, Cookie, Request, Body
 from pydantic import BaseModel, EmailStr
 from jose import JWTError, jwt
@@ -14,7 +14,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func
 
-
+#teste
 engine = None
 Base = None
 SessionLocal = None
@@ -28,7 +28,7 @@ app.mount("/app", StaticFiles(directory="Frontend", html=True), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000"],
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -49,6 +49,31 @@ def prepare_base():
     metadata = MetaData()
     metadata.reflect(bind=engine)
 
+    with Session(engine) as s:
+        try:
+            with open("db/init.sql", "r", encoding="utf-8") as f:
+                init_sql = f.read()
+
+            result = s.scalars(
+                select(Base.classes.usuarios).where(Base.classes.usuarios.email == "secretaria@example.com")
+            ).first()
+
+            if result is None:
+                s.execute(text(init_sql))
+                print("Banco de dados inicializado.")
+            else:
+                print("Banco de dados já existente e inicializado.")
+
+        except Exception as e:
+            print("Erro ao verificar usuário:", e)
+            try:
+                s.execute(text(init_sql))
+                s.commit()
+                print("Banco de dados inicializado via fallback.")
+            except Exception as inner_e:
+                print("Erro ao executar init.sql:", inner_e)
+
+
 
 prepare_base()
 
@@ -58,7 +83,7 @@ prepare_base()
 SECRET_KEY = "tbkMfMPLvnJUKPAXwsTWs9Q8H180vbquMUoVbXCA6cA="
 ALGORITHM = "HS256"
 
-
+'''def get_usuario_logado(access_token: str = Depends(oauth2_scheme)):'''
 def get_usuario_logado(access_token: str = Cookie(None)):
     if not access_token:
         raise HTTPException(
