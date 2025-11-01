@@ -38,7 +38,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:database%40@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
@@ -1271,3 +1271,146 @@ def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
             }
             for row in professores
         ]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#listar escolas, atualizar escolas, deletar escolas
+
+#serve para listar todas as escolas que estão cadastradas nesta secretaria
+@app.get("/secretaria/escolas/", status_code=status.HTTP_200_OK)
+def listar_secretaria_escolas(usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escolas = s.execute(
+            select(
+                Base.classes.escolas.id_escolas,
+                Base.classes.escolas.nome,
+                Base.classes.escolas.endereco
+            )
+        ).all()
+
+        return [
+            {
+                "id_escola": row.id_escolas,
+                "nome": row.nome,
+                "endereco": row.endereco
+            }
+            for row in escolas
+        ]
+
+
+#serve para atualizar as informações de uma escola específica
+@app.put("/secretaria/escolas/{id_escola}", status_code=status.HTTP_200_OK)
+def atualizar_escola_secretaria(escola: AtualizarSecretariaEscola, usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escola_bd = s.scalars(
+            select(Base.classes.escolas).where(Base.classes.escolas.id_escolas == escola.id_escola)
+        ).first()
+        if not escola_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada")
+        
+        escola_bd.nome = escola.novo_nome
+        escola_bd.endereco = escola.novo_endereco
+    
+        s.commit()
+        return {"message": "Escola atualizada com sucesso"}
+
+@app.delete("/secretaria/escolas/{id_escola}", status_code=status.HTTP_200_OK)
+def deletar_escola_secretaria(escola: DeletarEscola, usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escola_bd = s.scalars(
+            select(Base.classes.escolas).where(Base.classes.escolas.id_escolas == escola.id_escola)
+        ).first()
+        if not escola_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada")
+        
+        s.delete(escola_bd)
+        s.commit()
+        return {"message": "Escola deletada com sucesso"}
+
+
+#listar diretores, atualizar diretores, deletar diretores
+
+#serve para listar todos os diretores que estão cadastrados nesta secretaria
+@app.get("/secretaria/diretores/", status_code=status.HTTP_200_OK)
+def listar_diretores_secretaria(usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        diretores = s.execute(
+            select(
+                Base.classes.diretores.id_diretores.label("id_diretores"),
+                Base.classes.usuarios.nome_usuarios.label("nome_usuarios"),
+                Base.classes.usuarios.email.label("email"),
+                Base.classes.escolas.nome.label("nome_escolas"),
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.usuarios.id_usuarios == Base.classes.diretores.id_usuarios
+            )
+            .join(
+                Base.classes.escolas,
+                Base.classes.escolas.id_escolas == Base.classes.diretores.id_escolas
+            )
+        ).all()
+
+        return [
+            {
+                "id_diretor": row.id_diretores,
+                "nome": row.nome_usuarios,
+                "email": row.email,
+                "escola": row.nome_escolas
+            }
+            for row in diretores
+        ]
+
+# Atualizar diretor pela tela da secretaria
+@app.put("/secretaria/diretores/{id_diretor}", status_code=status.HTTP_200_OK)
+def atualizar_diretor_secretaria(diretor: AtualizarDiretor, usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        diretor_bd = s.scalars(
+            select(Base.classes.diretores).where(Base.classes.diretores.id_diretores == diretor.id_diretor)
+        ).first()
+        if not diretor_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diretor não encontrado")
+        
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == diretor_bd.id_usuarios)
+        ).first()
+        if not usuario_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário do diretor não encontrado")
+        
+        usuario_bd.nome_usuarios = diretor.novo_nome
+        usuario_bd.email = diretor.novo_email
+
+        s.commit()
+        return {"message": "Diretor atualizado com sucesso"}
+    
+#deletar diretor pela tela da secretaria
+@app.delete("/secretaria/diretores/{id_diretor}", status_code=status.HTTP_200_OK)
+def deletar_diretor_secretaria(diretor: AtualizarDiretor, usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        diretor_bd = s.scalars(
+            select(Base.classes.diretores).where(Base.classes.diretores.id_diretores == diretor.id_diretor)
+        ).first()
+        if not diretor_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diretor não encontrado")
+        
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == diretor_bd.id_usuarios)
+        ).first()
+        if not usuario_bd:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Usuário do diretor não encontrado")
+        
+        s.delete(diretor_bd)
+        s.delete(usuario_bd)
+        s.commit()
+        return {"message": "Diretor deletado com sucesso"}

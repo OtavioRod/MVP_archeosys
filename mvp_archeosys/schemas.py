@@ -89,4 +89,15 @@ class RelatorioAula(BaseModel):
 class NotasDelete(BaseModel):
     aluno: str
 
+class AtualizarSecretariaEscola(BaseModel):
+    id_escola: int
+    novo_nome: str
+    novo_endereco: str
 
+class DeletarEscola(BaseModel):
+    id_escola: int
+
+class AtualizarDiretor(BaseModel):
+    id_diretor: int
+    novo_nome: str
+    novo_email: EmailStr

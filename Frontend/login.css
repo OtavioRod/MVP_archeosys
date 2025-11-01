@@ -7,7 +7,7 @@
 body {
   margin: 0;
   padding: 0;
-  background-color: #1a2238; 
+  background-color: #1a2238;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -45,7 +45,7 @@ input[type="password"] {
 }
 
 button {
-  background-color: #0099ff; 
+  background-color: #0099ff;
   color: #fff;
   padding: 12px;
   width: 100%;
@@ -70,7 +70,7 @@ button:hover {
 body {
   font-family: Arial, sans-serif;
   margin: 0;
-  background: #f5f5f5;
+  background: #003366;
   color: #333;
 }
 
@@ -210,12 +210,13 @@ tr:nth-child(even) {
   border-radius: 5px;
   cursor: pointer;
   color: white;
-  
+
 }
 
 #salvarEdicao {
   background: #05dd05;
 }
+
 #cancelar {
   background: #0f2c63;
 }
