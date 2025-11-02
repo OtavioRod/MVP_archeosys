@@ -133,3 +133,6 @@ class AtualizarDisciplina(BaseModel):
 
 class DeletarDisciplina(BaseModel):
     id_disciplina: int
+
+class DeletarTurma(BaseModel):
+    id_turma: int
