@@ -101,3 +101,35 @@ class AtualizarDiretor(BaseModel):
     id_diretor: int
     novo_nome: str
     novo_email: EmailStr
+
+class AtualizarTurma(BaseModel):
+    id_turma: int
+    novo_nome_turma: str
+    novo_horario: str
+    nova_serie: str
+    novo_turno: str
+
+class AtualizarProfessor(BaseModel):
+    id_professor: int
+    email_atual: EmailStr
+    novo_nome: str
+    novo_email: EmailStr
+
+class DeletarProfessor(BaseModel):
+    id_professor: int
+
+class AtualizarAluno(BaseModel):
+    id_aluno: int
+    email_atual: EmailStr
+    novo_nome: str
+    novo_email: EmailStr
+
+class DeletarAluno(BaseModel):
+    id_aluno: int
+
+class AtualizarDisciplina(BaseModel):
+    id_disciplina: int
+    novo_nome: str
+
+class DeletarDisciplina(BaseModel):
+    id_disciplina: int

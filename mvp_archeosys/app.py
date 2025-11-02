@@ -1414,3 +1414,318 @@ def deletar_diretor_secretaria(diretor: AtualizarDiretor, usuario=Depends(soment
         s.delete(usuario_bd)
         s.commit()
         return {"message": "Diretor deletado com sucesso"}
+    
+
+
+#listar, atualizar, deletar turmas, professores, alunos, disciplinas
+
+@app.get("/coordenador/turmas/", status_code=status.HTTP_200_OK)
+def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        turmas_bd = s.scalars(
+            select(Base.classes.turmas)
+            .where(Base.classes.turmas.id_escolas == usuario.id_escolas)
+        ).all()
+        if not turmas_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Turmas não encontradas no banco"
+            )
+
+        return [
+            {
+                "id_turma": row.id_turmas,
+                "nome_turma": row.nome_turma,
+                "horario_turma": row.horario,
+                "serie_turma": row.serie,
+                "turno_turma": row.turno
+            }
+            for row in turmas_bd
+        ]
+
+@app.put("/coordenador/turmas/", status_code=status.HTTP_200_OK)
+def atualizar_turma_coordenador(turma: AtualizarTurma, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        turma_bd = s.scalars(
+            select(Base.classes.turmas)
+            .where(Base.classes.turmas.id_turmas == turma.id_turma)
+            .where(Base.classes.turmas.id_escolas == usuario.id_escolas)
+        ).first()
+        if not turma_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Turma não encontrada no banco"
+            )
+
+        turma_bd.nome_turma = turma.novo_nome_turma
+        turma_bd.horario = turma.novo_horario
+        turma_bd.serie = turma.nova_serie
+        turma_bd.turno = turma.novo_turno
+
+        s.commit()
+        return {"message": "Turma atualizada com sucesso"}
+
+@app.delete("/coordenador/turmas/", status_code=status.HTTP_200_OK)
+def deletar_turma_coordenador(turma: DeletarTurma, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        turma_bd = s.scalars(
+            select(Base.classes.turmas)
+            .where(Base.classes.turmas.id_turmas == turma.id_turma)
+            .where(Base.classes.turmas.id_escolas == usuario.id_escolas)
+        ).first()
+        if not turma_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Turma não encontrada no banco"
+            )
+
+        s.delete(turma_bd)
+        s.commit()
+        return {"message": "Turma deletada com sucesso"}
+
+
+
+@app.get("/coordenador/professores/", status_code=status.HTTP_200_OK)
+def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        professores_bd = s.execute(
+            select(
+                Base.classes.professores.id_professores.label("id_professor"),
+                Base.classes.usuarios.nome_usuarios.label("nome_professor"),
+                Base.classes.usuarios.email.label("email_professor")
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.professores.id_usuarios == Base.classes.usuarios.id_usuarios
+            )
+            .where(Base.classes.professores.id_escolas == usuario.id_escolas)
+        ).all()
+
+        if not professores_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nenhum professor encontrado para a escola do coordenador."
+            )
+
+        return [
+            {
+                "id_professor": row.id_professor,
+                "nome_professor": row.nome_professor,
+                "email_professor": row.email_professor
+            }
+            for row in professores_bd
+        ]
+
+@app.put("/coordenador/professores/", status_code=status.HTTP_200_OK)
+def atualizar_professor_coordenador(professor: AtualizarProfessor, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        professor_bd = s.scalars(
+            select(Base.classes.professores)
+            .join(
+                Base.classes.usuarios,
+                Base.classes.professores.id_usuarios == Base.classes.usuarios.id_usuarios
+            )
+            .where(Base.classes.usuarios.email == professor.email_atual)
+            .where(Base.classes.professores.id_escolas == usuario.id_escolas)
+        ).first()
+
+        if not professor_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Professor não encontrado para a escola do coordenador."
+            )
+
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == professor_bd.id_usuarios)
+        ).first()
+
+        usuario_bd.nome_usuarios = professor.novo_nome
+        usuario_bd.email = professor.novo_email
+        usuario_bd.senha = professor.nova_senha
+
+        s.commit()
+        return {"message": "Professor atualizado com sucesso"}
+
+
+@app.delete("/coordenador/professores/", status_code=status.HTTP_200_OK)
+def deletar_professor_coordenador(professor: DeletarProfessor, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        professor_bd = s.scalars(
+            select(Base.classes.professores)
+            .where(Base.classes.professores.id_professores == professor.id_professor)
+            .where(Base.classes.professores.id_escolas == usuario.id_escolas)
+        ).first()
+
+        if not professor_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Professor não encontrado para a escola do coordenador."
+            )
+
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == professor_bd.id_usuarios)
+        ).first()
+
+        s.delete(professor_bd)
+        s.delete(usuario_bd)
+        s.commit()
+        return {"message": "Professor deletado com sucesso"}
+
+@app.get("/coordenador/alunos/", status_code=status.HTTP_200_OK)
+def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        alunos_bd = s.execute(
+            select(
+                Base.classes.alunos.id_alunos.label("id_aluno"),
+                Base.classes.usuarios.nome_usuarios.label("nome_aluno"),
+                Base.classes.usuarios.email.label("email_aluno")
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.alunos.id_usuarios == Base.classes.usuarios.id_usuarios
+            )
+            .where(Base.classes.alunos.id_escolas == usuario.id_escolas)
+        ).all()
+
+        if not alunos_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nenhum aluno encontrado para a escola do coordenador."
+            )
+
+        return [
+            {
+                "id_aluno": row.id_aluno,
+                "nome_aluno": row.nome_aluno,
+                "email_aluno": row.email_aluno
+            }
+            for row in alunos_bd
+        ]
+
+@app.put("/coordenador/alunos/", status_code=status.HTTP_200_OK)
+def atualizar_aluno_coordenador(aluno: AtualizarAluno, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        aluno_bd = s.scalars(
+            select(Base.classes.alunos)
+            .join(
+                Base.classes.usuarios,
+                Base.classes.alunos.id_usuarios == Base.classes.usuarios.id_usuarios
+            )
+            .where(Base.classes.usuarios.email == aluno.email_atual)
+            .where(Base.classes.alunos.id_escolas == usuario.id_escolas)
+        ).first()
+
+        if not aluno_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Aluno não encontrado para a escola do coordenador."
+            )
+
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == aluno_bd.id_usuarios)
+        ).first()
+
+        if not usuario_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado para o aluno."
+            )
+
+        usuario_bd.nome_usuarios = aluno.novo_nome
+        usuario_bd.email = aluno.novo_email
+
+        s.commit()
+        return {"message": "Aluno atualizado com sucesso"}
+
+@app.delete("/coordenador/alunos/", status_code=status.HTTP_200_OK)
+def deletar_aluno_coordenador(aluno: DeletarAluno, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        aluno_bd = s.scalars(
+            select(Base.classes.alunos)
+            .where(Base.classes.alunos.id_alunos == aluno.id_aluno)
+            .where(Base.classes.alunos.id_escolas == usuario.id_escolas)
+        ).first()
+
+        if not aluno_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Aluno não encontrado para a escola do coordenador."
+            )
+
+        usuario_bd = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == aluno_bd.id_usuarios)
+        ).first()
+
+        if not usuario_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Usuário não encontrado para o aluno."
+            )
+
+        s.delete(aluno_bd)
+        s.delete(usuario_bd)
+        s.commit()
+        return {"message": "Aluno deletado com sucesso"}
+
+@app.get("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
+def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        disciplinas_bd = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(Base.classes.disciplinas.id_escolas == usuario.id_escolas)
+        ).all()
+        if not disciplinas_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Disciplinas não encontradas no banco"
+            )
+
+        return [
+            {
+                "id_disciplina": row.id_disciplinas,
+                "nome_disciplina": row.nome_disciplina,
+                "carga_horaria": row.carga_horaria
+            }
+            for row in disciplinas_bd
+        ]
+
+
+@app.put("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
+def atualizar_disciplina_coordenador(disciplina: AtualizarDisciplina, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        disciplina_bd = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(Base.classes.disciplinas.id_disciplinas == disciplina.id_disciplina)
+        ).first()
+        if not disciplina_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Disciplina não encontrada no banco"
+            )
+
+        disciplina_bd.nome_disciplina = disciplina.novo_nome_disciplina
+        disciplina_bd.carga_horaria = disciplina.nova_carga_horaria
+
+        s.commit()
+        return {"message": "Disciplina atualizada com sucesso"}
+
+@app.delete("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
+def deletar_disciplina_coordenador(disciplina: DeletarDisciplina, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        disciplina_bd = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(Base.classes.disciplinas.id_disciplinas == disciplina.id_disciplina)
+        ).first()
+        if not disciplina_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Disciplina não encontrada no banco"
+            )
+
+        s.delete(disciplina_bd)
+        s.commit()
+        return {"message": "Disciplina deletada com sucesso"}
