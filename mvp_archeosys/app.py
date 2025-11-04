@@ -1419,6 +1419,8 @@ def deletar_diretor_secretaria(diretor: AtualizarDiretor, usuario=Depends(soment
 
 #listar, atualizar, deletar turmas, professores, alunos, disciplinas
 
+#tela coordenador
+#listar turmas
 @app.get("/coordenador/turmas/", status_code=status.HTTP_200_OK)
 def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1442,7 +1444,8 @@ def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
             }
             for row in turmas_bd
         ]
-
+#tela coordenador
+#atualizar turmas
 @app.put("/coordenador/turmas/", status_code=status.HTTP_200_OK)
 def atualizar_turma_coordenador(turma: AtualizarTurma, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1464,7 +1467,8 @@ def atualizar_turma_coordenador(turma: AtualizarTurma, usuario=Depends(somente_c
 
         s.commit()
         return {"message": "Turma atualizada com sucesso"}
-
+#tela coordenador
+#deletar turmas
 @app.delete("/coordenador/turmas/", status_code=status.HTTP_200_OK)
 def deletar_turma_coordenador(turma: DeletarTurma, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1484,7 +1488,8 @@ def deletar_turma_coordenador(turma: DeletarTurma, usuario=Depends(somente_coord
         return {"message": "Turma deletada com sucesso"}
 
 
-
+#tela coordenador
+#listar professores
 @app.get("/coordenador/professores/", status_code=status.HTTP_200_OK)
 def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1516,6 +1521,8 @@ def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
             for row in professores_bd
         ]
 
+#tela coordenador
+#atualizar professores
 @app.put("/coordenador/professores/", status_code=status.HTTP_200_OK)
 def atualizar_professor_coordenador(professor: AtualizarProfessor, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1547,7 +1554,8 @@ def atualizar_professor_coordenador(professor: AtualizarProfessor, usuario=Depen
         s.commit()
         return {"message": "Professor atualizado com sucesso"}
 
-
+#tela coordenador
+#deletar professores
 @app.delete("/coordenador/professores/", status_code=status.HTTP_200_OK)
 def deletar_professor_coordenador(professor: DeletarProfessor, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1573,6 +1581,8 @@ def deletar_professor_coordenador(professor: DeletarProfessor, usuario=Depends(s
         s.commit()
         return {"message": "Professor deletado com sucesso"}
 
+#tela coordenador
+#listar alunos
 @app.get("/coordenador/alunos/", status_code=status.HTTP_200_OK)
 def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1604,6 +1614,8 @@ def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
             for row in alunos_bd
         ]
 
+#tela coordenador
+#atualizar alunos
 @app.put("/coordenador/alunos/", status_code=status.HTTP_200_OK)
 def atualizar_aluno_coordenador(aluno: AtualizarAluno, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1640,6 +1652,8 @@ def atualizar_aluno_coordenador(aluno: AtualizarAluno, usuario=Depends(somente_c
         s.commit()
         return {"message": "Aluno atualizado com sucesso"}
 
+#tela coordenador
+#deletar alunos
 @app.delete("/coordenador/alunos/", status_code=status.HTTP_200_OK)
 def deletar_aluno_coordenador(aluno: DeletarAluno, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1671,6 +1685,8 @@ def deletar_aluno_coordenador(aluno: DeletarAluno, usuario=Depends(somente_coord
         s.commit()
         return {"message": "Aluno deletado com sucesso"}
 
+#tela coordenador
+#listar disciplinas
 @app.get("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
 def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1693,7 +1709,8 @@ def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
             for row in disciplinas_bd
         ]
 
-
+#tela coordenador
+#atualizar disciplinas
 @app.put("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
 def atualizar_disciplina_coordenador(disciplina: AtualizarDisciplina, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1713,6 +1730,8 @@ def atualizar_disciplina_coordenador(disciplina: AtualizarDisciplina, usuario=De
         s.commit()
         return {"message": "Disciplina atualizada com sucesso"}
 
+#tela coordenador
+#deletar disciplinas
 @app.delete("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
 def deletar_disciplina_coordenador(disciplina: DeletarDisciplina, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
