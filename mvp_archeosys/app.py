@@ -1748,3 +1748,186 @@ def deletar_disciplina_coordenador(disciplina: DeletarDisciplina, usuario=Depend
         s.delete(disciplina_bd)
         s.commit()
         return {"message": "Disciplina deletada com sucesso"}
+    
+#criar presença
+#atualizar, deletar, presenca, nota, justificativa, Relatório
+
+
+
+#criar presenca
+@app.post("/presenca/")
+def criar_presenca(presenca: CriarPresenca, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        usuario_aluno_bd = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.nome_usuarios == presenca.aluno)
+        ).first()
+        if not usuario_aluno_bd:
+            raise HTTPException(status_code=404, detail="Usuário do aluno não encontrado")
+        
+        aluno_bd = s.scalars(
+            select(Base.classes.alunos)
+            .where(Base.classes.alunos.id_usuarios == usuario_aluno_bd.id_usuarios)
+        ).first()
+
+        if not aluno_bd:
+            raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+        nova_presenca = Base.classes.presencas(
+            aluno=aluno_bd.id_alunos,
+            disciplina=presenca.disciplina,
+            presente=presenca.presente,
+            justificativa=presenca.justificativa
+        )
+
+        s.add(nova_presenca)
+        s.commit()
+        return {"message": "Presença criada com sucesso"}
+
+#atualizar presenca
+@app.put("/presenca/")
+def atualizar_presenca(presenca: AtualizarPresenca, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        presenca_bd = s.scalars(
+            select(Base.classes.presencas)
+            .where(Base.classes.presencas.id_presenca == presenca.id_presenca)
+        ).first()
+        if not presenca_bd:
+            raise HTTPException(status_code=404, detail="Presença não encontrada")
+
+        presenca_bd.presente = presenca.presente
+        presenca_bd.justificativa = presenca.justificativa
+
+        s.commit()
+        return {"message": "Presença atualizada com sucesso"}
+
+#deletar presenca
+@app.delete("/presenca/{id_presenca}", status_code=status.HTTP_200_OK)
+def deletar_presenca(presenca: DeletarPresenca, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        presenca_bd = s.scalars(
+            select(Base.classes.presencas)
+            .where(Base.classes.presencas.id_presenca == presenca.id_presenca)
+        ).first()
+        if not presenca_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Presença não encontrada no banco"
+            )
+
+        s.delete(presenca_bd)
+        s.commit()
+        return {"message": "Presença deletada com sucesso"}
+    
+#atualizar nota
+@app.put("/nota/")
+def atualizar_nota(nota: AtualizarNota, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        nota_bd = s.scalars(
+            select(Base.classes.notas)
+            .where(Base.classes.notas.id_nota == nota.id_nota)
+        ).first()
+        if not nota_bd:
+            raise HTTPException(status_code=404, detail="Nota não encontrada")
+
+        nota_bd.nota = nota.nova_nota
+
+        s.commit()
+        return {"message": "Nota atualizada com sucesso"}
+    
+#deletar nota
+@app.delete("/nota/", status_code=status.HTTP_200_OK)
+def deletar_nota(nota: DeletarNota, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        nota_bd = s.scalars(
+            select(Base.classes.notas)
+            .where(Base.classes.notas.id_nota == nota.id_nota)
+        ).first()
+        if not nota_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nota não encontrada no banco"
+            )
+
+        s.delete(nota_bd)
+        s.commit()
+        return {"message": "Nota deletada com sucesso"}
+
+#atualizar justificativa
+@app.put("/justificativa/")
+def atualizar_justificativa(justificativa: AtualizarJustificativa, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        justificativa_bd = s.scalars(
+            select(Base.classes.justificativas)
+            .where(Base.classes.justificativas.id_justificativa == justificativa.id_justificativa)
+        ).first()
+        if not justificativa_bd:
+            raise HTTPException(status_code=404, detail="Justificativa não encontrada")
+
+        justificativa_bd.texto = justificativa.novo_texto
+
+        s.commit()
+        return {"message": "Justificativa atualizada com sucesso"}
+
+#deletar justificativa
+@app.delete("/justificativa/", status_code=status.HTTP_200_OK)
+def deletar_justificativa(justificativa: DeletarJustificativa, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        presenca_bd = s.scalars(
+            select(Base.classes.presencas)
+            .where(Base.classes.presencas.id_presencas == justificativa.id_presenca)
+        ).first()
+        if not presenca_bd:
+            raise HTTPException(status_code=404, detail="Presença não encontrada, para deletar a justificativa")
+
+        presenca_bd.justificativa = None
+
+        s.commit()
+        return {"message": "Justificativa deletada com sucesso"}
+
+#Listar Relatórios
+@app.get("/relatorios/")
+def listar_relatorios(usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        professor_bd = s.scalars(
+            select(Base.classes.professores)
+            .where(Base.classes.professores.id_usuarios == int(usuario["id"]))
+        ).first()
+
+        relatorios = s.scalars(
+            select(Base.classes.relatorios_aula)
+        ).where(Base.classes.relatorios_aula.id_professores == professor_bd.id_professores).all()
+        return relatorios
+
+#Atualizar Relatório
+@app.put("/relatorios/")
+def atualizar_relatorio(relatorio: AtualizarRelatorioAula, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        relatorio_bd = s.scalars(
+            select(Base.classes.relatorios_aula)
+            .where(Base.classes.relatorios_aula.id == relatorio.id)
+        ).first()
+        if not relatorio_bd:
+            raise HTTPException(status_code=404, detail="Relatório não encontrado")
+
+        relatorio_bd.conteudo = relatorio.novo_conteudo
+        relatorio_bd.metodologia = relatorio.nova_metodologia
+        relatorio_bd.recursos = relatorio.novos_recursos
+
+        s.commit()
+        return {"message": "Relatório atualizado com sucesso"}
+
+#deletar Relatório de Aula
+@app.delete("/relatorios/", status_code=status.HTTP_200_OK)
+def deletar_relatorio(relatorio: DeletarRelatorioAula, usuario=Depends(somente_professor)):
+    with Session(engine) as s:
+        relatorio_bd = s.scalars(
+            select(Base.classes.relatorios_aula)
+            .where(Base.classes.relatorios_aula.id == relatorio.id_relatorio)
+        ).first()
+        if not relatorio_bd:
+            raise HTTPException(status_code=404, detail="Relatório não encontrado")
+
+        s.delete(relatorio_bd)
+        s.commit()
+        return {"message": "Relatório deletado com sucesso"}
