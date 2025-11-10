@@ -1,14 +1,9 @@
-// ============================
-// CONFIGURAÇÃO PRINCIPAL
-// ============================
-const API_URL = "http://localhost:8000"; // ajuste conforme seu backend
+const API_URL = "http://localhost:8000";
 
-// Seletores padronizados
 const tabela = document.querySelector("#tabela tbody");
 const formEscola = document.getElementById("formEscola");
 const formDiretor = document.getElementById("formDiretor");
 
-// Modais e botões
 const modalEditar = document.getElementById("modalEditar");
 const modalExcluir = document.getElementById("modalExcluir");
 const fecharEditar = document.getElementById("fecharEditar");
@@ -70,12 +65,12 @@ formEscola.addEventListener("submit", async (ev) => {
       formEscola.reset();
       carregarEscolas();
     } else if (r.status === 409) {
-      resposta.textContent = "⚠️ Escola já cadastrada.";
+      resposta.textContent = "Escola já cadastrada.";
     } else {
-      resposta.textContent = "❌ Erro ao cadastrar escola.";
+      resposta.textContent = "Erro ao cadastrar escola.";
     }
   } catch {
-    resposta.textContent = "❌ Erro de conexão com o servidor.";
+    resposta.textContent = "Erro de conexão com o servidor.";
   }
 });
 
@@ -92,34 +87,34 @@ formDiretor.addEventListener("submit", async (ev) => {
   resposta.textContent = "Enviando...";
 
   try {
-    const r = await fetch(`${API_URL}/diretores/`, {
+    const resp = await fetch(`${API_URL}/diretores/`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ nome, email, senha, escola }),
     });
 
-    if (r.status === 201) {
-      resposta.textContent = "✅ Diretor cadastrado com sucesso!";
+    if (resp.status === 201) {
+      resposta.textContent = "Diretor cadastrado com sucesso!";
       formDiretor.reset();
       carregarEscolas();
-    } else if (r.status === 409) {
-      resposta.textContent = "⚠️ Diretor ou escola já cadastrada.";
+    } else if (resp.status === 409) {
+      resposta.textContent = "Diretor ou escola já cadastrada.";
     } else {
-      resposta.textContent = "❌ Erro ao cadastrar diretor.";
+      resposta.textContent = "Erro ao cadastrar diretor.";
     }
   } catch {
-    resposta.textContent = "❌ Erro de conexão com o servidor.";
+    resposta.textContent = "Erro de conexão com o servidor.";
   }
 });
 
 // ============================
 // AÇÕES DA TABELA (UPDATE / DELETE)
 // ============================
-tabela.addEventListener("click", async (ev) => {
-  const id = ev.target.dataset.id;
+tabela.addEventListener("click", async (event) => {
+  const id = event.target.dataset.id;
 
   // EDITAR ESCOLA
-  if (ev.target.classList.contains("editar")) {
+  if (event.target.classList.contains("editar")) {
     const resp = await fetch(`${API_URL}/escolas/${id}`);
     const e = await resp.json();
     idSelecionado = id;
@@ -134,7 +129,7 @@ tabela.addEventListener("click", async (ev) => {
   }
 
   // EXCLUIR ESCOLA
-  if (ev.target.classList.contains("excluir")) {
+  if (event.target.classList.contains("excluir")) {
     idSelecionado = id;
     modalExcluir.showModal();
   }
@@ -145,8 +140,8 @@ tabela.addEventListener("click", async (ev) => {
 // ============================
 const formEditar = document.getElementById("formEditar");
 
-formEditar.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
+formEditar.addEventListener("submit", async (event) => {
+  event.preventDefault();
   const data = {
     nome: document.getElementById("editEscola").value,
     endereco: document.getElementById("editEndereco").value,
