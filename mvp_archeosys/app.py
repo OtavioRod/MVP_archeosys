@@ -1,5 +1,6 @@
 from turtle import update
 from typing import Annotated
+from typing import Optional
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update, text
@@ -28,7 +29,7 @@ app.mount("/app", StaticFiles(directory="Frontend", html=True), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=["http://127.0.0.1:5500","http://localhost:5500","http://127.0.0.1:8000","*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +39,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:database%40@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
@@ -271,6 +272,62 @@ def cadastrar_diretores(diretor: DiretorCreate, usuario = Depends(somente_secret
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="escola is not None")
         else:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="result is none")
+        
+@app.get("/escolas/{id_escola}", status_code=status.HTTP_200_OK)
+def obter_escola(id_escola: int):
+    with Session(engine) as s:
+        escola = s.get(Base.classes.escolas, id_escola)
+        if not escola:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada")
+
+        # tenta pegar o diretor e o usuário vinculados
+        diretor_rel = s.scalars(
+            select(Base.classes.diretores).where(Base.classes.diretores.id_escolas == id_escola)
+        ).first()
+        diretor_data = None
+        if diretor_rel:
+            usuario_diretor = s.get(Base.classes.usuarios, diretor_rel.id_usuarios)
+            diretor_data = {
+                "nome": usuario_diretor.nome_usuarios,
+                "email": usuario_diretor.email,
+            }
+
+        return {
+            "id": escola.id_escolas,
+            "nome": escola.nome,
+            "endereco": escola.endereco,
+            "diretor": diretor_data
+        }
+        
+@app.put("/escolas/{id_escola}", status_code=status.HTTP_200_OK)
+def atualizar_escola(id_escola: int, dados: dict = Body(...), usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escola = s.get(Base.classes.escolas, id_escola)
+        if not escola:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada")
+
+        # Atualiza os campos da escola
+        if "nome" in dados and dados["nome"]:
+            escola.nome = dados["nome"]
+        if "endereco" in dados and dados["endereco"]:
+            escola.endereco = dados["endereco"]
+        s.commit()
+
+        # Atualiza diretor (opcional)
+        if "diretor" in dados and dados["diretor"]:
+            diretor_rel = s.scalars(
+                select(Base.classes.diretores).where(Base.classes.diretores.id_escolas == id_escola)
+            ).first()
+
+            if diretor_rel:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor_rel.id_usuarios)
+                if "nome" in dados["diretor"] and dados["diretor"]["nome"]:
+                    usuario_diretor.nome_usuarios = dados["diretor"]["nome"]
+                if "email" in dados["diretor"] and dados["diretor"]["email"]:
+                    usuario_diretor.email = dados["diretor"]["email"]
+                s.commit()
+
+        return {"mensagem": "Dados da escola atualizados com sucesso"}
 
 #listar coordenadores da escola do diretor logado
 @app.get("/diretores/coordenadores", status_code=status.HTTP_200_OK)
@@ -347,6 +404,31 @@ def atualizar_coordenadores(coordenador: CoordenadorUpdate, usuario = Depends(so
         s.commit()
         return {"detail": f"Coordenador '{coordenador.email_atual}' atualizado com sucesso"}
 
+@app.get("/escolas/", status_code=status.HTTP_200_OK)
+def listar_escolas(usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escolas_db = s.scalars(select(Base.classes.escolas)).all()
+
+        # opcional: retornar também dados do diretor
+        escolas = []
+        for e in escolas_db:
+            diretor = s.scalars(
+                select(Base.classes.usuarios)
+                .join(Base.classes.diretores)
+                .where(Base.classes.diretores.id_escolas == e.id_escolas)
+            ).first()
+
+            escolas.append({
+                "id": e.id_escolas,
+                "nome": e.nome,
+                "endereco": e.endereco,
+                "diretor": {
+                    "nome": diretor.nome_usuarios if diretor else None,
+                    "email": diretor.email if diretor else None
+                } if diretor else None
+            })
+
+        return escolas
 
 @app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
 def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(somente_diretor)):
