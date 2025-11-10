@@ -73,7 +73,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (resposta.ok) {
           mostrarMensagem(respostaCadastro, " Coordenador cadastrado com sucesso!", "success");
+
           formCadastro.reset();
+
         } else {
           const erro = await resposta.json();
           mostrarMensagem(respostaCadastro, ` Erro: ${erro.detail}`, "error");

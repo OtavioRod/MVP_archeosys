@@ -39,7 +39,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:database%40@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
@@ -1077,21 +1077,21 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
         if not aluno:
             raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
-        escola = s.get(Base.classes.escolas, aluno.id_escolas)
-        if not escola:
-            raise HTTPException(status_code=404, detail="Escola não encontrada")
+        #escola = s.get(Base.classes.escolas, aluno.id_escolas)
+        #if not escola:
+        #    raise HTTPException(status_code=404, detail="Escola não encontrada")
 
-        turma_aluno = s.scalars(
-            select(Base.classes.turma_alunos)
-            .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
-        ).first()
+        #turma_aluno = s.scalars(
+        #    select(Base.classes.turma_alunos)
+        #    .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
+        #).first()
 
-        if not turma_aluno:
-            raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
-
-        turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
-        if not turma:
-            raise HTTPException(status_code=404, detail="Turma não encontrada")
+        #if not turma_aluno:
+        #    raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
+#
+        #turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
+        #if not turma:
+        #    raise HTTPException(status_code=404, detail="Turma não encontrada")
 
         usuario_BD = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == aluno.id_usuarios)
@@ -1104,8 +1104,8 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
 
         return {
             "nome": usuario_BD.nome_usuarios,
-            "turma": turma.nome_turma,
-            "escola": escola.nome,
+            #"turma": turma.nome_turma,
+            #"escola": escola.nome,
         }
 
 
@@ -2013,3 +2013,19 @@ def deletar_relatorio(relatorio: DeletarRelatorioAula, usuario=Depends(somente_p
         s.delete(relatorio_bd)
         s.commit()
         return {"message": "Relatório deletado com sucesso"}
+
+#deletar escola, endereço, diretor, email
+
+@app.delete("/escolas/{id_escola}", status_code=status.HTTP_200_OK)
+def deletar_escola(id_escola: int, usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escola_bd = s.scalars(
+            select(Base.classes.escolas)
+            .where(Base.classes.escolas.id_escolas == id_escola)
+        ).first()
+        if not escola_bd:
+            raise HTTPException(status_code=404, detail="Escola não encontrada")
+
+        s.delete(escola_bd)
+        s.commit()
+        return {"message": "Escola deletada com sucesso"}
