@@ -15,9 +15,8 @@ const btnExcluirEmail = document.getElementById("btnExcluirEmail");
 
 let idSelecionado = null;
 
-// ============================
 // CARREGAR DADOS (READ)
-// ============================
+
 async function carregarEscolas() {
   try {
     const resp = await fetch(`${API_URL}/escolas/`);
@@ -107,9 +106,8 @@ formDiretor.addEventListener("submit", async (ev) => {
   }
 });
 
-// ============================
-// AÇÕES DA TABELA (UPDATE / DELETE)
-// ============================
+// TABELA (UPDATE / DELETE)
+
 tabela.addEventListener("click", async (event) => {
   const id = event.target.dataset.id;
 
@@ -166,40 +164,30 @@ fecharEditar.addEventListener("click", () => modalEditar.close());
 // ============================
 // EXCLUSÕES PARCIAIS (PATCH / DELETE)
 // ============================
-btnExcluirEscola.onclick = async () => {
-  await fetch(`${API_URL}/escolas/${idSelecionado}`, { method: "DELETE" });
-  modalExcluir.close();
-  carregarEscolas();
-};
+// ============================
+// EXCLUSÕES (TOTAIS E PARCIAIS)
+// ============================
 
-btnExcluirEndereco.onclick = async () => {
-  await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ endereco: null }),
-  });
-  modalExcluir.close();
-  carregarEscolas();
-};
+async function excluir(tipo) {
+  try {
+    await fetch(`${API_URL}/escolas/${idSelecionado}`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tipo }),
+    });
+    modalExcluir.close();
+    carregarEscolas();
+  } catch (err) {
+    console.error("Erro ao excluir:", err);
+  }
+}
 
-btnExcluirDiretor.onclick = async () => {
-  await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ diretor: null }),
-  });
-  modalExcluir.close();
-  carregarEscolas();
-};
+btnExcluirEscola.onclick = () => excluir("escola");
+btnExcluirEndereco.onclick = () => excluir("endereco");
+btnExcluirDiretor.onclick = () => excluir("diretor");
+btnExcluirEmail.onclick = () => excluir("email");
 
-btnExcluirEmail.onclick = async () => {
-  await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ diretor: { email: null } }),
-  });
-  modalExcluir.close();
-  carregarEscolas();
-};
+fecharExcluir.addEventListener("click", () => modalExcluir.close());
+
 
 fecharExcluir.addEventListener("click", () => modalExcluir.close());
