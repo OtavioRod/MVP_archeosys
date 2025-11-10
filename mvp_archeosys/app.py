@@ -28,7 +28,7 @@ app.mount("/app", StaticFiles(directory="Frontend", html=True), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],
+    allow_origins=["http://127.0.0.1:5500","http://localhost:5500","http://127.0.0.1:8000","*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,7 +38,7 @@ app.add_middleware(
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
     global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:database%40@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
     Base = automap_base()
     Base.prepare(autoload_with=engine)
@@ -347,6 +347,31 @@ def atualizar_coordenadores(coordenador: CoordenadorUpdate, usuario = Depends(so
         s.commit()
         return {"detail": f"Coordenador '{coordenador.email_atual}' atualizado com sucesso"}
 
+@app.get("/escolas/", status_code=status.HTTP_200_OK)
+def listar_escolas(usuario=Depends(somente_secretaria)):
+    with Session(engine) as s:
+        escolas_db = s.scalars(select(Base.classes.escolas)).all()
+
+        # opcional: retornar também dados do diretor
+        escolas = []
+        for e in escolas_db:
+            diretor = s.scalars(
+                select(Base.classes.usuarios)
+                .join(Base.classes.diretores)
+                .where(Base.classes.diretores.id_escolas == e.id_escolas)
+            ).first()
+
+            escolas.append({
+                "id": e.id_escolas,
+                "nome": e.nome,
+                "endereco": e.endereco,
+                "diretor": {
+                    "nome": diretor.nome_usuarios if diretor else None,
+                    "email": diretor.email if diretor else None
+                } if diretor else None
+            })
+
+        return escolas
 
 @app.post("/coordenadores/", status_code=status.HTTP_201_CREATED) #quem pode cadastrar é o diretor
 def cadastrar_coordenadores(coordenador: CoordenadorCreate, usuario = Depends(somente_diretor)):
