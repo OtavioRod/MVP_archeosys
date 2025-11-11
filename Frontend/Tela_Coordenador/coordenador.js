@@ -16,16 +16,20 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("nomeCoordenador").textContent = dados.nome_coordenador;
       document.getElementById("escolaCoordenador").textContent = dados.escola;
 
-      // Depois de confirmar que é coordenador, carregue a lista de professores:
+      carregarTurmas();
       carregarProfessores();
+      carregarAlunos();
+      carregarDisciplinas();
+      carregarAlunoTurmas();
+      carregarProfessoresSelect();
     })
     .catch(() => {
       alert("Erro na conexão, faça login novamente.");
       window.location.href = "/app/login.html";
     });
 
-  // Carrega os professores no select
-  async function carregarProfessores() {
+  // Preencher select de professores
+  async function carregarProfessoresSelect() {
     try {
       const res = await fetch(`${backend}/coordenador/professores/`, {
         credentials: "include",
@@ -80,7 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Cadastrar disciplina para professor selecionado
+  // Formulários
   enviarFormulario("formDisciplina", "/disciplina/", (fd) => ({
     nome: fd.get("nome"),
     turma: fd.get("turma"),
@@ -96,13 +100,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }));
 
   enviarFormulario("formProfessor", "/professores/", (fd) => ({
-  nome: fd.get("nome"),
-  email: fd.get("email"),
-  senha: fd.get("senha"),
-  id_escola: escolaUsuario,
+    nome: fd.get("nome"),
+    email: fd.get("email"),
+    senha: fd.get("senha"),
+    id_escola: escolaUsuario,
   }));
 
-  // Cadastrar Aluno
   enviarFormulario("formAluno", "/alunos/", (fd) => ({
     nome: fd.get("nome"),
     email: fd.get("email"),
@@ -110,9 +113,108 @@ document.addEventListener("DOMContentLoaded", () => {
     id_escola: escolaUsuario,
   }));
 
-  // Vincular Aluno à Turma
   enviarFormulario("formAlunoTurma", "/aluno_turma/", (fd) => ({
     aluno: fd.get("aluno"),
     turma: fd.get("turma"),
   }));
+
+  // Tabelas
+  async function carregarTurmas() {
+    try {
+      const resp = await fetch(`${backend}/coordenador/turmas/`, { credentials: "include" });
+      const turmas = await resp.json();
+      const tabela = document.querySelector("#tabelaTurmas tbody");
+      tabela.innerHTML = "";
+      turmas.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${t.nome_turma}</td>
+          <td>${t.serie_turma}</td>
+          <td>${t.turno_turma}</td>
+          <td>${t.horario_turma}</td>
+          <td>${t.id_turma}</td>`;
+        tabela.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Erro ao carregar turmas:", err);
+    }
+  }
+
+  async function carregarProfessores() {
+    try {
+      const resp = await fetch(`${backend}/coordenador/professores/`, { credentials: "include" });
+      const professores = await resp.json();
+      const tabela = document.querySelector("#tabelaProfessores tbody");
+      tabela.innerHTML = "";
+      professores.forEach((p) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${p.nome}</td>
+          <td>${p.email}</td>
+          <td>${p.id_professor}</td>`;
+        tabela.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Erro ao carregar professores:", err);
+    }
+  }
+
+  async function carregarAlunos() {
+    try {
+      const resp = await fetch(`${backend}/coordenador/alunos/`, { credentials: "include" });
+      const alunos = await resp.json();
+      const tabela = document.querySelector("#tabelaAlunos tbody");
+      tabela.innerHTML = "";
+      alunos.forEach((a) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${a.nome_aluno}</td>
+          <td>${a.email_aluno}</td>
+          <td>${a.id_aluno}</td>`;
+        tabela.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Erro ao carregar alunos:", err);
+    }
+  }
+
+  async function carregarDisciplinas() {
+    try {
+      const resp = await fetch(`${backend}/coordenador/disciplinas/`, { credentials: "include" });
+      const disciplinas = await resp.json();
+      const tabela = document.querySelector("#tabelaDisciplinas tbody");
+      tabela.innerHTML = "";
+
+      if (Array.isArray(disciplinas)) {
+        disciplinas.forEach((d) => {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
+            <td>${d.nome_disciplina}</td>
+          <td>${d.id_disciplina}</td>`;
+          tabela.appendChild(tr);
+        });
+      }
+    } catch (err) {
+      console.error("Erro ao carregar disciplinas:", err);
+    }
+  }
+
+  async function carregarAlunoTurmas() {
+    try {
+      const resp = await fetch(`${backend}/coordenador/aluno_turma/`, { credentials: "include" });
+      const relacoes = await resp.json();
+      const tabela = document.querySelector("#tabelaAlunoTurma tbody");
+      tabela.innerHTML = "";
+      relacoes.forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${r.nome_aluno}</td>
+          <td>${r.nome_turma}</td>
+          <td>${r.id_aluno_turma}</td>`;
+        tabela.appendChild(tr);
+      });
+    } catch (err) {
+      console.error("Erro ao carregar aluno-turma:", err);
+    }
+  }
 });

@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <title>ArckeoSys - Coordenador</title>
   <link rel="stylesheet" href="coordenador.css">
 </head>
+
 <body>
   <header class="header">
     <h1>ArckeoSys</h1>
@@ -58,7 +60,7 @@
         <input type="text" name="turma" placeholder="Nome da Turma" required>
         <!--<input type="text" name="professor" placeholder="Nome do Professor" required>-->
         <select name="id_professor" id="professorSelect" required>
-        <option value="">Selecione um professor</option>
+          <option value="">Selecione um professor</option>
         </select>
         <button type="submit">Cadastrar Disciplina</button>
       </form>
@@ -74,8 +76,89 @@
       </form>
     </section>
 
+
+
+
+
+    <!-- TURMAS -->
+    <section class="card">
+      <h2>Turmas Cadastradas</h2>
+      <table id="tabelaTurmas">
+        <thead>
+          <tr>
+            <th>Nome da Turma</th>
+            <th>Série</th>
+            <th>Turno</th>
+            <th>Horário</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- PROFESSORES -->
+    <section class="card">
+      <h2>Professores Cadastrados</h2>
+      <table id="tabelaProfessores">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ALUNOS -->
+    <section class="card">
+      <h2>Alunos Cadastrados</h2>
+      <table id="tabelaAlunos">
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Email</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- DISCIPLINAS -->
+    <section class="card">
+      <h2>Disciplinas Cadastradas</h2>
+      <table id="tabelaDisciplinas">
+        <thead>
+          <tr>
+            <th>Nome da Disciplina</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <!-- ALUNO-TURMA -->
+    <section class="card">
+      <h2>Alunos Vinculados às Turmas</h2>
+      <table id="tabelaAlunoTurma">
+        <thead>
+          <tr>
+            <th>Nome do Aluno</th>
+            <th>Nome da Turma</th>
+            <th>ID</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
   </main>
 
   <script src="coordenador.js"></script>
 </body>
+
 </html>

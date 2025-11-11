@@ -1508,7 +1508,7 @@ def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
         turmas_bd = s.scalars(
             select(Base.classes.turmas)
-            .where(Base.classes.turmas.id_escolas == usuario.id_escolas)
+            .where(Base.classes.turmas.id_escolas == usuario["id_escola"])
         ).all()
         if not turmas_bd:
             raise HTTPException(
@@ -1520,9 +1520,9 @@ def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
             {
                 "id_turma": row.id_turmas,
                 "nome_turma": row.nome_turma,
-                "horario_turma": row.horario,
-                "serie_turma": row.serie,
-                "turno_turma": row.turno
+                "horario": row.horario,
+                "serie": row.serie,
+                "turno": row.turno
             }
             for row in turmas_bd
         ]
@@ -1678,7 +1678,7 @@ def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
                 Base.classes.usuarios,
                 Base.classes.alunos.id_usuarios == Base.classes.usuarios.id_usuarios
             )
-            .where(Base.classes.alunos.id_escolas == usuario.id_escolas)
+            .where(Base.classes.alunos.id_escolas == usuario["id_escola"])
         ).all()
 
         if not alunos_bd:
@@ -1686,7 +1686,7 @@ def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Nenhum aluno encontrado para a escola do coordenador."
             )
-
+        
         return [
             {
                 "id_aluno": row.id_aluno,
@@ -1772,9 +1772,47 @@ def deletar_aluno_coordenador(aluno: DeletarAluno, usuario=Depends(somente_coord
 @app.get("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
 def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
+        disciplinas_bd = s.execute(
+            select(
+                Base.classes.disciplinas.id_disciplinas.label("id_disciplina"),
+                Base.classes.disciplinas.nome_disciplina.label("nome_disciplina"),
+                #Base.classes.disciplinas.carga_horaria.label("carga_horaria"),
+                Base.classes.turmas.nome_turma.label("nome_turma")
+            )
+            .join(
+                Base.classes.turmas,
+                Base.classes.turmas.id_turmas == Base.classes.disciplinas.id_turmas
+            )
+            .join(
+                Base.classes.coordenadores,
+                Base.classes.coordenadores.id_escolas == Base.classes.turmas.id_escolas
+            )
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).all()
+
+        if not disciplinas_bd:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Nenhuma disciplina encontrada para esta escola"
+            )
+
+        return [
+            {
+                "id_disciplina": d.id_disciplina,
+                "nome_disciplina": d.nome_disciplina,
+                #"carga_horaria": d.carga_horaria,
+                "nome_turma": d.nome_turma
+            }
+            for d in disciplinas_bd
+        ]
+
+'''
+@app.get("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
+def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
         disciplinas_bd = s.scalars(
             select(Base.classes.disciplinas)
-            .where(Base.classes.disciplinas.id_escolas == usuario.id_escolas)
+            #.where(Base.classes.disciplinas.id_escolas == usuario.id_escolas) #concertar
         ).all()
         if not disciplinas_bd:
             raise HTTPException(
@@ -1790,7 +1828,7 @@ def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
             }
             for row in disciplinas_bd
         ]
-
+'''
 #tela coordenador
 #atualizar disciplinas
 @app.put("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
@@ -2015,7 +2053,7 @@ def deletar_relatorio(relatorio: DeletarRelatorioAula, usuario=Depends(somente_p
         return {"message": "Relatório deletado com sucesso"}
 
 #deletar escola, endereço, diretor, email
-
+'''
 @app.delete("/escolas/{id_escola}", status_code=status.HTTP_200_OK)
 def deletar_escola(id_escola: int, usuario=Depends(somente_secretaria)):
     with Session(engine) as s:
@@ -2029,3 +2067,248 @@ def deletar_escola(id_escola: int, usuario=Depends(somente_secretaria)):
         s.delete(escola_bd)
         s.commit()
         return {"message": "Escola deletada com sucesso"}
+    
+'''
+
+@app.delete("/escolas/{id_escola}", status_code=status.HTTP_204_NO_CONTENT)
+async def deletar_escola(id_escola: int, request: Request, usuario=Depends(somente_secretaria)):
+    """
+    Exclui informações da escola:
+        - tipo="escola" → remove escola e tudo vinculado
+        - tipo="endereco" → limpa apenas o endereço
+        - tipo="diretor" → remove o diretor e o usuário dele
+        - tipo="email" → apaga apenas o e-mail do diretor
+    """
+    data = await request.json() if request.headers.get("content-type") == "application/json" else {}
+    tipo = data.get("tipo", "escola")
+
+    with Session(engine) as s:
+        escola = s.get(Base.classes.escolas, id_escola)
+        if not escola:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada.")
+
+        diretor = s.scalars(
+            select(Base.classes.diretores).where(Base.classes.diretores.id_escolas == id_escola)
+        ).first()
+
+        # ============ EXCLUSÃO TOTAL ============
+        if tipo == "escola":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    s.delete(usuario_diretor)
+                s.delete(diretor)
+            s.delete(escola)
+
+        # ============ EXCLUSÃO PARCIAL ============
+        elif tipo == "endereco":
+            escola.endereco = None
+
+        elif tipo == "diretor":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    s.delete(usuario_diretor)
+                s.delete(diretor)
+            else:
+                raise HTTPException(status_code=404, detail="Diretor não encontrado.")
+
+        elif tipo == "email":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    usuario_diretor.email = None
+                else:
+                    raise HTTPException(status_code=404, detail="Usuário do diretor não encontrado.")
+            else:
+                raise HTTPException(status_code=404, detail="Diretor não encontrado.")
+
+        else:
+            raise HTTPException(status_code=400, detail="Tipo de exclusão inválido.")
+
+        s.commit()
+        return {"message": f"{tipo.capitalize()} excluído(a) com sucesso."}
+    
+
+#tela coordenador get, update, delete turmas, professores, alunos, disciplinas, vinculo aluno a turma
+
+@app.get("/coordenador/turmas/")
+async def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == int(usuario["id"]))
+        ).first()
+        if not coord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Coordenador não encontrado no banco"
+            )
+
+        turmas = s.execute(
+            select(
+                Base.classes.turmas.id_turmas,
+                Base.classes.turmas.nome_turma,
+                Base.classes.turmas.horario,
+                Base.classes.turmas.serie,
+                Base.classes.turmas.turno
+            )
+            .where(Base.classes.turmas.id_escolas == coord.id_escolas)
+        ).all()
+
+        return [
+            {
+                "id_turma": row.id_turmas,
+                "nome_turma": row.nome_turma,
+                "horario": row.horario,
+                "serie": row.serie,
+                "turno": row.turno
+            }
+            for row in turmas
+        ]
+    
+
+
+@app.get("/coordenador/professores/")
+async def listar_professores_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == int(usuario["id"]))
+        ).first()
+        if not coord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Coordenador não encontrado no banco"
+            )
+
+        professores = s.execute(
+            select(
+                Base.classes.professores.id_professores,
+                Base.classes.usuarios.nome_usuarios,
+                Base.classes.usuarios.email
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.usuarios.id_usuarios == Base.classes.professores.id_usuarios
+            )
+            .where(Base.classes.professores.id_escolas == coord.id_escolas)
+        ).all()
+
+        return [
+            {
+                "id_professor": row.id_professores,
+                "nome": row.nome_usuarios,
+                "email": row.email
+            }
+            for row in professores
+        ]
+
+@app.get("/coordenador/alunos/")
+async def listar_alunos_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == int(usuario["id"]))
+        ).first()
+        if not coord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Coordenador não encontrado no banco"
+            )
+
+        alunos = s.execute(
+            select(
+                Base.classes.alunos.id_alunos,
+                Base.classes.usuarios.nome_usuarios,
+                Base.classes.usuarios.email
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.usuarios.id_usuarios == Base.classes.alunos.id_usuarios
+            )
+            .where(Base.classes.alunos.id_escolas == coord.id_escolas)
+        ).all()
+
+        return [
+            {
+                "id_aluno": row.id_alunos,
+                "nome": row.nome_usuarios,
+                "email": row.email
+            }
+            for row in alunos
+        ]
+
+@app.get("/coordenador/disciplinas/")
+async def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == int(usuario["id"]))
+        ).first()
+        if not coord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Coordenador não encontrado no banco"
+            )
+
+        disciplinas = s.execute(
+            select(
+                Base.classes.disciplinas.id_disciplinas,
+                Base.classes.disciplinas.nome_disciplina,
+                Base.classes.disciplinas.carga_horaria
+            )
+            .where(Base.classes.disciplinas.id_escolas == coord.id_escolas)
+        ).all()
+
+        return [
+            {
+                "id_disciplina": row.id_disciplinas,
+                "nome_disciplina": row.nome_disciplina,
+                "carga_horaria": row.carga_horaria
+            }
+            for row in disciplinas
+        ]
+
+@app.get("/coordenador/aluno_turma/")
+async def listar_aluno_turma_coordenador(usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == int(usuario["id"]))
+        ).first()
+        if not coord:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Coordenador não encontrado no banco"
+            )
+
+        aluno_turmas = s.execute(
+            select(
+                Base.classes.turma_alunos.id_turma_alunos.label("id_alunos_turmas"),
+                Base.classes.usuarios.nome_usuarios.label("nome_aluno"),
+                Base.classes.turmas.nome_turma.label("nome_turma")
+            )
+            .join(
+                Base.classes.alunos,
+                Base.classes.alunos.id_alunos == Base.classes.turma_alunos.id_alunos
+            )
+            .join(
+                Base.classes.usuarios,
+                Base.classes.usuarios.id_usuarios == Base.classes.alunos.id_usuarios
+            )
+            .join(
+                Base.classes.turmas,
+                Base.classes.turmas.id_turmas == Base.classes.turma_alunos.id_turmas
+            )
+            .where(Base.classes.alunos.id_escolas == coord.id_escolas)
+        ).all()
+
+        return [
+            {
+                "id_aluno_turma": row.id_alunos_turmas,
+                "nome_aluno": row.nome_aluno,
+                "nome_turma": row.nome_turma
+            }
+            for row in aluno_turmas
+        ]
