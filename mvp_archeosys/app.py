@@ -1830,3 +1830,64 @@ def deletar_disciplina_coordenador(disciplina: DeletarDisciplina, usuario=Depend
         s.delete(disciplina_bd)
         s.commit()
         return {"message": "Disciplina deletada com sucesso"}
+    
+@app.delete("/escolas/{id_escola}", status_code=status.HTTP_204_NO_CONTENT)
+async def deletar_escola(id_escola: int, request: Request, usuario=Depends(somente_secretaria)):
+    """
+    Exclui informações da escola:
+      - tipo="escola" → remove escola e tudo vinculado
+      - tipo="endereco" → limpa apenas o endereço
+      - tipo="diretor" → remove o diretor e o usuário dele
+      - tipo="email" → apaga apenas o e-mail do diretor
+    """
+    data = await request.json() if request.headers.get("content-type") == "application/json" else {}
+    tipo = data.get("tipo", "escola")
+
+    with Session(engine) as s:
+        escola = s.get(Base.classes.escolas, id_escola)
+        if not escola:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Escola não encontrada.")
+
+        diretor = s.scalars(
+            select(Base.classes.diretores).where(Base.classes.diretores.id_escolas == id_escola)
+        ).first()
+
+        # ============ EXCLUSÃO TOTAL ============
+        if tipo == "escola":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    s.delete(usuario_diretor)
+                s.delete(diretor)
+            s.delete(escola)
+
+        # ============ EXCLUSÃO PARCIAL ============
+        elif tipo == "endereco":
+            escola.endereco = None
+
+        elif tipo == "diretor":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    s.delete(usuario_diretor)
+                s.delete(diretor)
+            else:
+                raise HTTPException(status_code=404, detail="Diretor não encontrado.")
+
+        elif tipo == "email":
+            if diretor:
+                usuario_diretor = s.get(Base.classes.usuarios, diretor.id_usuarios)
+                if usuario_diretor:
+                    usuario_diretor.email = None
+                else:
+                    raise HTTPException(status_code=404, detail="Usuário do diretor não encontrado.")
+            else:
+                raise HTTPException(status_code=404, detail="Diretor não encontrado.")
+
+        else:
+            raise HTTPException(status_code=400, detail="Tipo de exclusão inválido.")
+
+        s.commit()
+        return {"message": f"{tipo.capitalize()} excluído(a) com sucesso."}
+    
+    

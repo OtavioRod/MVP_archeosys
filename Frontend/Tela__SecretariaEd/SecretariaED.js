@@ -169,17 +169,13 @@ fecharEditar.addEventListener("click", () => modalEditar.close());
 // ============================
 
 async function excluir(tipo) {
-  try {
-    await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tipo }),
-    });
-    modalExcluir.close();
-    carregarEscolas();
-  } catch (err) {
-    console.error("Erro ao excluir:", err);
-  }
+  await fetch(`${API_URL}/escolas/${idSelecionado}`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipo }),
+  });
+  modalExcluir.close();
+  carregarEscolas();
 }
 
 btnExcluirEscola.onclick = () => excluir("escola");
