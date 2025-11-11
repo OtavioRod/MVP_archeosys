@@ -14,6 +14,19 @@
       <p>Bem-vindo, <span id="nomeCoordenador">Coordenador</span></p>
       <p>Escola: <span id="escolaCoordenador">Escola</span></p>
     </div>
+    <nav class="menu">
+      <button class="nav-btn" data-section="turmas">Turmas</button>
+      <button class="nav-btn" data-section="professores">Professores</button>
+      <button class="nav-btn" data-section="alunos">Alunos</button>
+      <button class="nav-btn" data-section="disciplinas">Disciplinas</button>
+      <button class="nav-btn" data-section="vincular">Vincular Aluno à Turma</button>
+      <a class="nav-btn btn-voltar" href="/app/login.html"
+        style="background-color: red; color: white; text-decoration: none; ">
+        ← Voltar ao login
+      </a>
+
+
+    </nav>
   </header>
 
   <main class="container">
@@ -91,6 +104,7 @@
             <th>Turno</th>
             <th>Horário</th>
             <th>ID</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -106,6 +120,7 @@
             <th>Nome</th>
             <th>Email</th>
             <th>ID</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -121,6 +136,7 @@
             <th>Nome</th>
             <th>Email</th>
             <th>ID</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -135,6 +151,7 @@
           <tr>
             <th>Nome da Disciplina</th>
             <th>ID</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -150,6 +167,7 @@
             <th>Nome do Aluno</th>
             <th>Nome da Turma</th>
             <th>ID</th>
+            <th>Ações</th>
           </tr>
         </thead>
         <tbody></tbody>
@@ -159,6 +177,8 @@
   </main>
 
   <script src="coordenador.js"></script>
+
+
 </body>
 
 </html>

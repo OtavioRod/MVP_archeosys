@@ -1,3 +1,4 @@
+import email
 from turtle import update
 from typing import Annotated
 from typing import Optional
@@ -14,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func
+from fastapi import Request
 
 #teste
 engine = None
@@ -1530,6 +1532,8 @@ def listar_turmas_coordenador(usuario=Depends(somente_coordenador)):
 #atualizar turmas
 @app.put("/coordenador/turmas/", status_code=status.HTTP_200_OK)
 def atualizar_turma_coordenador(turma: AtualizarTurma, usuario=Depends(somente_coordenador)):
+    print(turma.dict())
+
     with Session(engine) as s:
         turma_bd = s.scalars(
             select(Base.classes.turmas)
@@ -1546,6 +1550,11 @@ def atualizar_turma_coordenador(turma: AtualizarTurma, usuario=Depends(somente_c
         turma_bd.horario = turma.novo_horario
         turma_bd.serie = turma.nova_serie
         turma_bd.turno = turma.novo_turno
+        '''id_turma: int
+        novo_nome_turma: str
+        novo_horario: str
+        nova_serie: str
+        novo_turno: str'''
 
         s.commit()
         return {"message": "Turma atualizada com sucesso"}
@@ -1831,6 +1840,7 @@ def listar_disciplinas_coordenador(usuario=Depends(somente_coordenador)):
 '''
 #tela coordenador
 #atualizar disciplinas
+'''
 @app.put("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
 def atualizar_disciplina_coordenador(disciplina: AtualizarDisciplina, usuario=Depends(somente_coordenador)):
     with Session(engine) as s:
@@ -1849,7 +1859,7 @@ def atualizar_disciplina_coordenador(disciplina: AtualizarDisciplina, usuario=De
 
         s.commit()
         return {"message": "Disciplina atualizada com sucesso"}
-
+'''
 #tela coordenador
 #deletar disciplinas
 @app.delete("/coordenador/disciplinas/", status_code=status.HTTP_200_OK)
@@ -2312,3 +2322,195 @@ async def listar_aluno_turma_coordenador(usuario=Depends(somente_coordenador)):
             }
             for row in aluno_turmas
         ]
+
+# =========================
+# TURMAS
+# =========================
+
+@app.put("/turma/{id_turma}")
+async def atualizar_turma(id_turma: int, request: Request, usuario=Depends(somente_coordenador)):
+    dados = await request.json()
+
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).first()
+        if not coord:
+            raise HTTPException(status_code=404, detail="Coordenador não encontrado")
+
+        turma = s.scalars(
+            select(Base.classes.turmas)
+            .where(Base.classes.turmas.id_turmas == id_turma)
+            .where(Base.classes.turmas.id_escolas == coord.id_escolas)
+        ).first()
+        if not turma:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
+
+        for campo, valor in dados.items():
+            if hasattr(turma, campo):
+                setattr(turma, campo, valor)
+
+        s.commit()
+        return {"detail": "Turma atualizada com sucesso"}
+
+
+
+# =========================
+# PROFESSORES
+# =========================
+@app.put("/coordenador/professores/{id_professor}")
+async def atualizar_professor(id_professor: int, dados: dict, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).first()
+        if not coord:
+            raise HTTPException(status_code=404, detail="Coordenador não encontrado")
+
+        prof = s.scalars(
+            select(Base.classes.professores)
+            .where(Base.classes.professores.id_professores == id_professor)
+            .where(Base.classes.professores.id_escolas == coord.id_escolas)
+        ).first()
+        if not prof:
+            raise HTTPException(status_code=404, detail="Professor não encontrado")
+
+        usuario_prof = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == prof.id_usuarios)
+        ).first()
+
+        campos_equivalentes = {
+            "nome": "nome_usuarios"
+        }
+
+        for campo, valor in dados.items():
+            campo_real = campos_equivalentes.get(campo, campo)
+            if hasattr(usuario_prof, campo_real):
+                setattr(usuario_prof, campo_real, valor)
+        s.commit()
+        return {"detail": "Professor atualizado com sucesso"}
+
+
+# =========================
+# ALUNOS
+# =========================
+@app.put("/coordenador/alunos/{id_aluno}")
+async def atualizar_aluno(id_aluno: int, dados: dict, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).first()
+        if not coord:
+            raise HTTPException(status_code=404, detail="Coordenador não encontrado")
+
+        aluno = s.scalars(
+            select(Base.classes.alunos)
+            .where(Base.classes.alunos.id_alunos == id_aluno)
+            .where(Base.classes.alunos.id_escolas == coord.id_escolas)
+        ).first()
+        if not aluno:
+            raise HTTPException(status_code=404, detail="Aluno não encontrado")
+
+        usuario_aluno = s.scalars(
+            select(Base.classes.usuarios)
+            .where(Base.classes.usuarios.id_usuarios == aluno.id_usuarios)
+        ).first()
+
+        campos_equivalentes = {
+            "nome_aluno": "nome_usuarios",
+            "email_aluno": "email"
+        }
+
+        for campo, valor in dados.items():
+            campo_real = campos_equivalentes.get(campo, campo)
+            if hasattr(usuario_aluno, campo_real):
+                setattr(usuario_aluno, campo_real, valor)
+
+        
+        s.commit()
+        return {"detail": "Aluno atualizado com sucesso"}
+
+
+# =========================
+# DISCIPLINAS
+# =========================
+@app.put("/coordenador/disciplina/{id_disciplina}")
+async def atualizar_disciplina(id_disciplina: int, dados: dict, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).first()
+        if not coord:
+            raise HTTPException(status_code=404, detail="Coordenador não encontrado")
+
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas)
+            .join(Base.classes.turmas, Base.classes.turmas.id_turmas == Base.classes.disciplinas.id_turmas)
+            .where(Base.classes.turmas.id_escolas == coord.id_escolas)
+            .where(Base.classes.disciplinas.id_disciplinas == id_disciplina)
+        ).first()
+        if not disciplina:
+            raise HTTPException(status_code=404, detail="Disciplina não encontrada")
+
+        for campo, valor in dados.items():
+            if hasattr(disciplina, campo):
+                setattr(disciplina, campo, valor)
+        s.commit()
+        return {"detail": "Disciplina atualizada com sucesso"}
+
+
+# =========================
+# ALUNO_TURMA
+# =========================
+@app.put("/coordenador/aluno_turma/{id_aluno_turma}")
+async def atualizar_aluno_turma(id_aluno_turma: int, dados: dict, usuario=Depends(somente_coordenador)):
+    with Session(engine) as s:
+        # 🔹 Verifica o coordenador
+        coord = s.scalars(
+            select(Base.classes.coordenadores)
+            .where(Base.classes.coordenadores.id_usuarios == usuario["id"])
+        ).first()
+        if not coord:
+            raise HTTPException(status_code=404, detail="Coordenador não encontrado")
+
+        relacao = s.scalars(
+            select(Base.classes.turma_alunos)
+            .join(Base.classes.alunos, Base.classes.alunos.id_alunos == Base.classes.turma_alunos.id_alunos)
+            .where(Base.classes.alunos.id_escolas == coord.id_escolas)
+            .where(Base.classes.turma_alunos.id_turma_alunos == id_aluno_turma)
+        ).first()
+        if not relacao:
+            raise HTTPException(status_code=404, detail="Vínculo aluno-turma não encontrado")
+
+        if "nome_aluno" in dados:
+            aluno = s.scalars(
+                select(Base.classes.alunos)
+                .join(Base.classes.usuarios, Base.classes.usuarios.id_usuarios == Base.classes.alunos.id_usuarios)
+                .where(Base.classes.usuarios.nome_usuarios == dados["nome_aluno"])
+                .where(Base.classes.alunos.id_escolas == coord.id_escolas)
+            ).first()
+            if not aluno:
+                raise HTTPException(status_code=404, detail="Aluno não encontrado com esse nome")
+            relacao.id_alunos = aluno.id_alunos
+
+        if "nome_turma" in dados:
+            turma = s.scalars(
+                select(Base.classes.turmas)
+                .where(Base.classes.turmas.nome_turma == dados["nome_turma"])
+                .where(Base.classes.turmas.id_escolas == coord.id_escolas)
+            ).first()
+            if not turma:
+                raise HTTPException(status_code=404, detail="Turma não encontrada com esse nome")
+            relacao.id_turmas = turma.id_turmas
+
+        for campo, valor in dados.items():
+            if hasattr(relacao, campo):
+                setattr(relacao, campo, valor)
+
+        s.commit()
+        return {"detail": "Vínculo aluno-turma atualizado com sucesso"}
