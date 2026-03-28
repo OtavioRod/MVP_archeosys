@@ -58,3 +58,51 @@ footer {
   font-size: 14px;
   color: #888;
 }
+
+/* ======= BOTÕES DE NAVEGAÇÃO ======= */
+nav.menu {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.nav-btn {
+  background-color: #e8eef4;
+  color: #003366;
+  border: 2px solid #003366;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.nav-btn:hover {
+  background-color: #0074ea;
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.nav-btn.active {
+  background-color: #003366;
+  color: #fff;
+  transform: scale(1.05);
+}
+
+/* ======= TRANSIÇÃO DAS SEÇÕES ======= */
+main section {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.4s ease, transform 0.4s ease;
+  display: none;
+}
+
+main section[style*="display: block"] {
+  display: block !important;
+  opacity: 1;
+  transform: translateY(0);
+}

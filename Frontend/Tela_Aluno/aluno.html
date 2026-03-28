@@ -1,50 +1,59 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ArckeoSys | Painel do Aluno</title>
   <link rel="stylesheet" href="aluno.css" />
 </head>
+
 <body>
   <header class="header">
     <h1>ArckeoSys</h1>
     <p>Painel do Aluno</p>
+
+    <!-- Botões de navegação -->
+    <nav class="menu">
+      <button class="nav-btn" data-section="perfil">Perfil</button>
+      <button class="nav-btn" data-section="notas">Notas</button>
+      <button class="nav-btn" data-section="faltas">Faltas</button>
+      <button class="nav-btn" data-section="frequencia">Frequência</button>
+      <a class="nav-btn btn-voltar" href="/app/login.html"
+        style="background-color: red; color: white; text-decoration: none; ">
+        ← Voltar ao login
+      </a>
+
+
+    </nav>
   </header>
 
   <main class="container">
     <!-- PERFIL -->
-    <section class="perfil">
+    <section class="perfil" style="display: flex;">
       <h2>Informações do Aluno</h2>
       <div id="alunoInfo"></div>
     </section>
 
     <!-- NOTAS -->
-    <section class="notas">
+    <section class="notas" style="display:none;">
       <h2>Notas por Bimestre</h2>
       <div id="notas"></div>
     </section>
 
-    <!-- FALTAS (opcional / não usada no JS atual) -->
-    <section class="faltas">
+    <!-- FALTAS -->
+    <section class="faltas" style="display:none;">
       <h2>Faltas por Disciplina</h2>
       <p>(Funcionalidade em desenvolvimento)</p>
     </section>
 
     <!-- PRESENÇAS -->
-    <section class="frequencia">
+    <section class="frequencia" style="display:none;">
       <h2>Visualizar Presenças por Disciplina</h2>
       <label for="disciplinaSelect">Escolha a Disciplina:</label>
       <select id="disciplinaSelect">
         <option value="">Selecione uma disciplina</option>
       </select>
-    <h3>Visualizar Presenças por Disciplina</h3>
-<select id="disciplinaSelect">
-  <option value="">Selecione uma disciplina</option>
-</select>
-<div id="presencas"></div>
-  
-
       <div id="presencas"></div>
     </section>
   </main>
@@ -53,6 +62,23 @@
     &copy; 2025 ArckeoSys - Sistema Integrado de Gestão Escolar
   </footer>
 
+  <script>
+    // Função de alternância das seções
+    const botoes = document.querySelectorAll(".nav-btn");
+    const secoes = document.querySelectorAll("main section");
+
+    botoes.forEach((botao) => {
+      botao.addEventListener("click", () => {
+        const alvo = botao.getAttribute("data-section");
+
+        secoes.forEach((secao) => {
+          secao.style.display = secao.classList.contains(alvo) ? "block" : "none";
+        });
+      });
+    });
+  </script>
+
   <script src="aluno.js"></script>
 </body>
+
 </html>

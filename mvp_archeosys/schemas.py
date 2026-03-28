@@ -136,3 +136,48 @@ class DeletarDisciplina(BaseModel):
 
 class DeletarTurma(BaseModel):
     id_turma: int
+
+#for (const presenca of presencas) {
+#      await fetch("http://localhost:8000/presenca/", {
+#        method: "PUT",
+#        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+#        body: JSON.stringify(presenca),
+#      });
+#    }
+class CriarPresenca(BaseModel):
+    aluno: str
+    disciplina: str
+    presente: bool
+    justificativa: Optional[str] = None
+
+class AtualizarPresenca(BaseModel):
+    id_presenca: int
+    presente: bool
+    justificativa: Optional[str] = None
+
+class DeletarPresenca(BaseModel):
+    id_presenca: int
+
+class AtualizarNota(BaseModel):
+    id_nota: int
+    nova_nota: float
+
+class DeletarNota(BaseModel):
+    id_nota: int
+
+class AtualizarJustificativa(BaseModel):
+    id_presenca: int
+    nova_justificativa: str
+
+class DeletarJustificativa(BaseModel):
+    id_presenca: int
+
+class AtualizarRelatorioAula(BaseModel):
+    id_relatorio: int
+    novo_conteudo: Optional[str] = ""
+    nova_metodologia: Optional[str] = ""
+    novos_recursos: Optional[str] = ""
+
+class DeletarRelatorioAula(BaseModel):
+    id_relatorio: int
+
