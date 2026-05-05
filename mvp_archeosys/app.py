@@ -37,44 +37,88 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+def ensure_database():
+    default_url = "postgresql://postgres:univassouras@localhost:5432/postgres"
+    target_db = "MVP"
+
+    engine = create_engine(default_url)
+
+    with engine.connect() as conn:
+        conn = conn.execution_options(isolation_level="AUTOCOMMIT")
+
+        exists = conn.execute(text(f"""
+            SELECT 1 FROM pg_database WHERE datname = '{target_db}';
+        """)).scalar()
+
+        if not exists:
+            conn.execute(text(f'CREATE DATABASE "{target_db}"'))
+            print(f"Database '{target_db}' criada.")
+        else:
+            print(f"Database '{target_db}' já existe.")
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
-    global engine, Base, SessionLocal, session, metadata
-    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
+    ensure_database()
+    global engine, Base, SessionLocal, metadata
+
+    DATABASE_URL = "postgresql://postgres:univassouras@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
-    Base = automap_base()
-    Base.prepare(autoload_with=engine)
 
-    SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    session = Session(engine)
+    SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
-    metadata = MetaData()
-    metadata.reflect(bind=engine)
-
+    # Step 1: Initialize schema (if needed)
     with Session(engine) as s:
         try:
             with open("db/init.sql", "r", encoding="utf-8") as f:
                 init_sql = f.read()
 
-            result = s.scalars(
-                select(Base.classes.usuarios).where(Base.classes.usuarios.email == "secretaria@example.com")
-            ).first()
+            # Try a lightweight check (table existence)
+            result = s.execute(text("""
+                SELECT to_regclass('public.usuarios');
+            """)).scalar()
 
             if result is None:
                 s.execute(text(init_sql))
+                s.commit()
                 print("Banco de dados inicializado.")
             else:
-                print("Banco de dados já existente e inicializado.")
+                print("Estrutura já existe.")
+
+        except Exception as e:
+            print("Erro ao inicializar banco:", e)
+            raise
+
+    # Step 2: Reflect AFTER schema exists
+    Base = automap_base()
+    Base.prepare(autoload_with=engine)
+
+    metadata = MetaData()
+    metadata.reflect(bind=engine)
+
+    # Step 3: Check initial data
+    with Session(engine) as s:
+        try:
+            Usuarios = Base.classes.usuarios
+
+            user = s.scalars(
+                select(Usuarios).where(Usuarios.email == "secretaria@example.com")
+            ).first()
+
+            if user is None:
+                print("Usuário inicial não encontrado. Inserindo...")
+                with open("db/init.sql", "r", encoding="utf-8") as f:
+                    s.execute(text(f.read()))
+                s.commit()
+            else:
+                print("Banco já populado.")
 
         except Exception as e:
             print("Erro ao verificar usuário:", e)
-            try:
-                s.execute(text(init_sql))
-                s.commit()
-                print("Banco de dados inicializado via fallback.")
-            except Exception as inner_e:
-                print("Erro ao executar init.sql:", inner_e)
+            raise
+         
+        
+
 
 
 
