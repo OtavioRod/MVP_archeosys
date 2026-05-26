@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import func
 from fastapi import Request
+import webbrowser
 
 #teste
 engine = None
@@ -207,6 +208,8 @@ def somente_professor(usuario=Depends(get_usuario_logado)):
 @app.on_event("startup")
 def on_startup():
     prepare_base()
+    webbrowser.open("http://localhost:8000/app/login.html")
+
 
 @app.post("/token/", status_code=status.HTTP_200_OK)
 def login(response: Response,username: EmailStr = Form(...), password: str = Form(...)):#login petrick

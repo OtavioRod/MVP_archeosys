@@ -5,7 +5,7 @@ REM Instala Poetry dentro do venv
 python -m pip install --upgrade pip
 python -m pip install poetry
 
-start http://localhost:8000/app/login.html
+::start http://localhost:8000/app/login.html
 
 REM Agora você pode usar
 python -m poetry install
