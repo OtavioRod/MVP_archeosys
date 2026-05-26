@@ -9,6 +9,7 @@ python -m pip install poetry
 
 REM Agora você pode usar
 python -m poetry install
+start http://localhost:8000/app/login.html
 python -m poetry run fastapi dev mvp_archeosys/app.py
 
 pause
