@@ -1,19 +1,16 @@
 import email
-from turtle import update
-from typing import Annotated
-from typing import Optional
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update, text
-from fastapi import FastAPI, HTTPException, status, Depends, Security, Form, Response, Cookie, Request, Body
-from pydantic import BaseModel, EmailStr
+from sqlalchemy import create_engine, select,MetaData, Table, select,text
+from fastapi import FastAPI, HTTPException, status, Depends, Form, Response, Cookie, Request, Body
+from pydantic import EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone, date
-from fastapi.security import OAuth2PasswordBearer,HTTPBasic, HTTPBasicCredentials
+from fastapi.security import OAuth2PasswordBearer
 from mvp_archeosys.schemas import *
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from fastapi import Request
 
