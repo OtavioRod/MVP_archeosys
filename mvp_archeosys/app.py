@@ -39,7 +39,7 @@ app.add_middleware(
 )
 
 def ensure_database():
-    default_url = "postgresql://postgres:univassouras@localhost:5432/postgres"
+    default_url = "postgresql://postgres:01122000@localhost:5432/postgres"
     target_db = "MVP"
 
     engine = create_engine(default_url)
@@ -63,7 +63,7 @@ def prepare_base():
     ensure_database()
     global engine, Base, SessionLocal, metadata
 
-    DATABASE_URL = "postgresql://postgres:univassouras@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:01122000@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
 
     SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -658,32 +658,68 @@ def cadastrar_aluno_turma(alunoTurma: AlunoTurmaCreate,usuario = Depends(somente
         s.refresh(aluno_turma)
 
         return {"mensagem": "Aluno adicionado à turma com sucesso"}
-
+    
+# mudei essa rota Otavio, -(Petrick)
 @app.post("/disciplina/", status_code=status.HTTP_201_CREATED)
-def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente_coordenador)):
+def cadastrar_disciplina(
+    disciplina: DisciplinaCreate,
+    usuario = Depends(somente_coordenador)
+):
     with Session(engine) as s:
-        existente = s.scalar(select(1).select_from(Base.classes.disciplinas).where(Base.classes.disciplinas.nome_disciplina == disciplina.nome))
-        if existente:
-            raise HTTPException(status_code=409, detail="Disciplina já existe")
 
+        # PAsso 1 - Aqui veerifica se a turma existe
         turma_BD = s.scalars(
-            select(Base.classes.turmas).where(Base.classes.turmas.nome_turma == disciplina.turma)
+            select(Base.classes.turmas)
+            .where(
+                Base.classes.turmas.nome_turma == disciplina.turma
+            )
         ).first()
-        if not turma_BD:
-            raise HTTPException(status_code=404, detail="Turma não encontrada")
 
+        if not turma_BD:
+            raise HTTPException(
+                status_code=404,
+                detail="Turma não encontrada"
+            )
+
+        #  Passo 2 - Se o professor existe
         prof_BD = s.scalars(
             select(Base.classes.professores)
-            .where(Base.classes.professores.id_professores == disciplina.id_professor)
+            .where(
+                Base.classes.professores.id_professores
+                == disciplina.id_professor
+            )
         ).first()
-        if not prof_BD:
-            raise HTTPException(status_code=404, detail="Professor não encontrado")
 
-        nova = Base.classes.disciplinas(
-            nome_disciplina = disciplina.nome,
-            id_turmas       = turma_BD.id_turmas,
-            id_professores  = prof_BD.id_professores
+        if not prof_BD:
+            raise HTTPException(
+                status_code=404,
+                detail="Professor não encontrado"
+            )
+
+        # PAsso 3 icando se essa disciplina já existe para a mesma turma e professor
+        existente = s.scalar(
+            select(1)
+            .select_from(Base.classes.disciplinas)
+            .where(
+                Base.classes.disciplinas.nome_disciplina == disciplina.nome,
+                Base.classes.disciplinas.id_turmas == turma_BD.id_turmas,
+                Base.classes.disciplinas.id_professores == prof_BD.id_professores
+            )
         )
+
+        if existente:
+            raise HTTPException(
+                status_code=409,
+                detail="Disciplina já cadastrada para esta turma e professor"
+            )
+
+        # Criando a disciplina corretamente agora
+        nova = Base.classes.disciplinas(
+            nome_disciplina=disciplina.nome,
+            id_turmas=turma_BD.id_turmas,
+            id_professores=prof_BD.id_professores
+        )
+
         s.add(nova)
         s.commit()
         s.refresh(nova)
@@ -694,7 +730,6 @@ def cadastrar_disciplina(disciplina: DisciplinaCreate, usuario = Depends(somente
             "turma": turma_BD.nome_turma,
             "professor": prof_BD.id_professores
         }
-
 
 
 
