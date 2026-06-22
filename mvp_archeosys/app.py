@@ -21,7 +21,6 @@ load_dotenv()
 
 PORT = str(os.getenv("PORT"))
 URL_DATABASE = os.getenv("URL_DATABASE")
-import webbrowser
 
 #teste
 engine = None
