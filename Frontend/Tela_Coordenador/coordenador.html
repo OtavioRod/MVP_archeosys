@@ -37,7 +37,11 @@
       <form id="formTurma">
         <input type="text" name="nome_turma" placeholder="Nome da Turma" required>
         <input type="text" name="serie" placeholder="Série" required>
-        <input type="text" name="turno" placeholder="Turno (Manhã/Tarde)" required>
+        <select name="turno" required">
+          <option value="" disabled selected>Selecione o turno</option>
+          <option value="Manhã">Manhã</option>
+          <option value="Tarde">Tarde</option>
+        </select>
         <input type="text" name="horario" placeholder="Horário (07:00 - 11:30)" required>
         <button type="submit">Cadastrar Turma</button>
       </form>

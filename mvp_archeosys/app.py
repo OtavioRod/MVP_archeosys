@@ -1,21 +1,26 @@
 import email
-from turtle import update
-from typing import Annotated
-from typing import Optional
 from sqlalchemy.ext.automap import automap_base
 from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy import create_engine, select,MetaData, Table, select, distinct, update, text
-from fastapi import FastAPI, HTTPException, status, Depends, Security, Form, Response, Cookie, Request, Body
-from pydantic import BaseModel, EmailStr
+from sqlalchemy import create_engine, select,MetaData, Table, select,text
+from fastapi import FastAPI, HTTPException, status, Depends, Form, Response, Cookie, Request, Body
+from pydantic import EmailStr
 from jose import JWTError, jwt
 from datetime import datetime, timedelta, timezone, date
-from fastapi.security import OAuth2PasswordBearer,HTTPBasic, HTTPBasicCredentials
+from fastapi.security import OAuth2PasswordBearer
 from mvp_archeosys.schemas import *
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from fastapi import Request
+from dotenv import load_dotenv
+import os
+import webbrowser
+
+load_dotenv()
+
+PORT = str(os.getenv("PORT"))
+URL_DATABASE = os.getenv("URL_DATABASE")
 import webbrowser
 
 #teste
@@ -32,7 +37,7 @@ app.mount("/app", StaticFiles(directory="Frontend", html=True), name="frontend")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5500","http://localhost:5500","http://127.0.0.1:8000","*"],
+    allow_origins=["http://127.0.0.1:"+PORT,"http://localhost:"+PORT,"*"],#env
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -60,11 +65,10 @@ def ensure_database():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
-    ensure_database()
-    global engine, Base, SessionLocal, metadata
-
-    DATABASE_URL = "postgresql://postgres:univassouras@localhost:5432/MVP"
-    engine = create_engine(DATABASE_URL)
+    global engine, Base, SessionLocal, session, metadata
+    engine = create_engine(URL_DATABASE)#env
+    Base = automap_base()
+    Base.prepare(autoload_with=engine)
 
     SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
 
@@ -127,8 +131,9 @@ prepare_base()
 
 
 
+
 #configurção token jwt
-SECRET_KEY = "tbkMfMPLvnJUKPAXwsTWs9Q8H180vbquMUoVbXCA6cA="
+SECRET_KEY = os.getenv("SECRET_KEY")#env
 ALGORITHM = "HS256"
 
 '''def get_usuario_logado(access_token: str = Depends(oauth2_scheme)):'''
@@ -208,8 +213,8 @@ def somente_professor(usuario=Depends(get_usuario_logado)):
 @app.on_event("startup")
 def on_startup():
     prepare_base()
-    webbrowser.open("http://localhost:8000/app/login.html")
-
+    endereco = "http://localhost:{porta}/app/login.html".format(porta = PORT)
+    webbrowser.open(endereco)
 
 @app.post("/token/", status_code=status.HTTP_200_OK)
 def login(response: Response,username: EmailStr = Form(...), password: str = Form(...)):#login petrick
