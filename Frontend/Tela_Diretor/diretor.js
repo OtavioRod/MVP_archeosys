@@ -174,12 +174,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
 
       mostrarMensagem(respostaCadastro, "Coordenador cadastrado com sucesso!", "success");
-      document.getElementById("nomeCoord").value = "";
-      document.getElementById("emailCoord").value = "";
-      document.getElementById("senhaCoord").value = "";
-      //formCadastro.reset();
-
-
+      formCadastro.reset();
     } catch (err) {
       mostrarMensagem(respostaCadastro, err.message, "error");
     }

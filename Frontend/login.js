@@ -1,87 +1,244 @@
-document.getElementById("loginForm").addEventListener("submit", async function (e) {
-  e.preventDefault();
+const loginForm =
+  document.getElementById("loginForm");
 
-  const email = document.getElementById("email").value;
-  const senha = document.getElementById("senha").value;
-  const mensagemErro = document.getElementById("mensagemErro");
+const emailInput =
+  document.getElementById("email");
 
-  try {
-    const response = await fetch("http://localhost:8000/token/", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      credentials: "include",
-      body: new URLSearchParams({ username: email, password: senha })
-    });
+const senhaInput =
+  document.getElementById("senha");
 
-    if (!response.ok) {
-      mensagemErro.textContent = "Email ou senha inválidos.";
-      return;
+const mensagemErro =
+  document.getElementById("mensagemErro");
+
+const botaoLogin =
+  document.querySelector(".login-button");
+
+/*LOGIN*/
+
+loginForm.addEventListener(
+  "submit",
+  async (e) => {
+
+    e.preventDefault();
+
+    limparErro();
+
+    const email =
+      emailInput.value.trim();
+
+    const senha =
+      senhaInput.value;
+
+    if (!email || !senha) {
+      return mostrarErro(
+        "Preencha todos os campos."
+      );
     }
 
-    const data = await response.json();
-    console.log("Received login data:", data);
+    try {
 
-    const token = data.access_token;
-    localStorage.setItem("token", token);
+      ativarLoading();
 
-    console.log("teste 2:", data);
-    const payload = JSON.parse(atob(token.split('.')[1]));
+      const response = await fetch(
+        "http://localhost:8000/token/",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/x-www-form-urlencoded",
+          },
+          credentials: "include",
+          body: new URLSearchParams({
+            username: email,
+            password: senha,
+          }),
+        }
+      );
 
-    const tipo = payload.tipo?.trim();
+      if (!response.ok) {
+        throw new Error(
+          "Email ou senha inválidos."
+        );
+      }
 
+      const data =
+        await response.json();
 
+      const token =
+        data.access_token;
 
-    console.log("log do tipo:", tipo);
-    switch (tipo) {
-      case "Professor":
-        window.location.href = "/app/Tela_Professor/professor.html";
-        break;
+      localStorage.setItem(
+        "token",
+        token
+      );
+
+      const payload =
+        JSON.parse(
+          atob(token.split(".")[1])
+        );
+
+      const tipo =
+        payload.tipo?.trim();
+
+      redirecionarUsuario(tipo);
+
+    } catch (error) {
+
+      console.error(error);
+
+      mostrarErro(
+        error.message ||
+        "Erro ao conectar ao servidor."
+      );
+
+    } finally {
+
+      desativarLoading();
 
     }
-
-    switch (tipo) {
-      case "Aluno":
-        window.location.href = "/app/Tela_Aluno/aluno.html";
-        break;
-      case "Professor":
-        window.location.href = "/app/Tela_Professor/professor.html";
-        break;
-      case "Coordenador":
-        window.location.href = "/app/Tela_Coordenador/coordenador.html";
-        break;
-      case "Diretor":
-        window.location.href = "/app/Tela_Diretor/diretor.html";
-        break;
-      case "SecretariaEducacao":
-        window.location.href = "/app/Tela__SecretariaEd/SecretariaED.html";
-        break;
-      default:
-        console.log(tipo)
-        mensagemErro.textContent = "Tipo de usuário não reconhecido.";
-        break;
-    }
-  } catch (error) {
-    console.error(error);
-    mensagemErro.textContent = "Erro ao conectar com o servidor.";
   }
-});
+);
 
-const emailInput = document.getElementById("email");
-const domains = ["gmail.com", "outlook.com", "hotmail.com", "yahoo.com", "example.com"];
+/*REDIRECIONAMENTO*/
 
-emailInput.addEventListener("keydown", (e) => {
-  const value = emailInput.value;
-  const atIndex = value.indexOf("@");
+function redirecionarUsuario(tipo) {
 
-  // When user presses TAB after typing "@"
-  if (atIndex > -1 && e.key === "Tab") {
-    e.preventDefault(); // prevent tab from changing focus
-    const typedDomain = value.slice(atIndex + 1).toLowerCase();
+  const rotas = {
 
-    // Find first matching domain
-    const match = domains.find(domain => domain.startsWith(typedDomain));
-    if (match) {
-      emailInput.value = value.slice(0, atIndex + 1) + match;
+    Aluno:
+      "/app/Tela_Aluno/aluno.html",
+
+    Professor:
+      "/app/Tela_Professor/professor.html",
+
+    Coordenador:
+      "/app/Tela_Coordenador/coordenador.html",
+
+    Diretor:
+      "/app/Tela_Diretor/diretor.html",
+
+    SecretariaEducacao:
+      "/app/Tela__SecretariaEd/SecretariaED.html",
+  };
+
+  const destino =
+    rotas[tipo];
+
+  if (!destino) {
+
+    mostrarErro(
+      "Tipo de usuário não reconhecido."
+    );
+
+    return;
+  }
+
+  window.location.href =
+    destino;
+}
+
+/*FEEDBACK*/
+
+function mostrarErro(texto) {
+
+  mensagemErro.textContent =
+    texto;
+
+  mensagemErro.style.display =
+    "block";
+}
+
+function limparErro() {
+
+  mensagemErro.textContent =
+    "";
+
+  mensagemErro.style.display =
+    "none";
+}
+
+/*LOADING*/
+
+function ativarLoading() {
+
+  botaoLogin.disabled = true;
+
+  botaoLogin.dataset.textoOriginal =
+    botaoLogin.textContent;
+
+  botaoLogin.textContent =
+    "Entrando...";
+}
+
+function desativarLoading() {
+
+  botaoLogin.disabled = false;
+
+  botaoLogin.textContent =
+    botaoLogin.dataset.textoOriginal ||
+    "Entrar";
+}
+
+/* AUTOCOMPLETE DE DOMÍNIO*/
+
+const domains = [
+  "gmail.com",
+  "outlook.com",
+  "hotmail.com",
+  "yahoo.com"
+];
+
+emailInput.addEventListener(
+  "keydown",
+  (e) => {
+
+    const valor =
+      emailInput.value;
+
+    const indiceArroba =
+      valor.indexOf("@");
+
+    if (
+      indiceArroba > -1 &&
+      e.key === "Tab"
+    ) {
+
+      e.preventDefault();
+
+      const dominioDigitado =
+        valor
+          .slice(indiceArroba + 1)
+          .toLowerCase();
+
+      const dominioEncontrado =
+        domains.find((dominio) =>
+          dominio.startsWith(
+            dominioDigitado
+          )
+        );
+
+      if (dominioEncontrado) {
+
+        emailInput.value =
+          valor.slice(
+            0,
+            indiceArroba + 1
+          ) + dominioEncontrado;
+      }
     }
   }
-});
+);
+
+/*ENTER NO CAMPO SENHA*/
+
+senhaInput.addEventListener(
+  "keydown",
+  (e) => {
+
+    if (e.key === "Enter") {
+
+      loginForm.requestSubmit();
+
+    }
+  }
+);

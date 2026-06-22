@@ -2,23 +2,158 @@
 <html lang="pt-BR">
 
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ArckeoSys- Login</title>
-  <link rel="stylesheet" href="login.css" />
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>ArckeoSys | Login</title>
+
+  <link
+    rel="stylesheet"
+    href="login.css"
+  >
 </head>
 
 <body>
-  <div class="login-container">
-    <h1 class="project-name">ArckeoSys</h1>
-    <form id="loginForm">
-      <input type="email" id="email" placeholder="Email" required />
-      <input type="password" id="senha" placeholder="Senha" required />
-      <button type="submit">Entrar</button>
-    </form>
-    <p id="mensagemErro" class="erro"></p>
-  </div>
+
+  <main class="login-page">
+
+    <section class="login-card">
+
+     
+      <aside class="institutional-panel">
+
+        <header class="project-header">
+
+          <h1 class="project-name">
+            ArckeoSys
+          </h1>
+
+          <p class="project-description">
+            Sistema de Gestão Escolar para controle de
+            frequência, notas, relatórios pedagógicos
+            e acompanhamento acadêmico.
+          </p>
+
+        </header>
+
+        <section class="team-section">
+
+          <h2>
+            Equipe do Projeto
+          </h2>
+
+          <ul class="team-list">
+            <li>Petrick Brayan M Marques</li>
+            <li>Rafael de Souza do Carmo</li>
+            <li>Otávio Rodrigues Amorim de Almeida</li>
+            
+          </ul>
+
+        </section>
+
+        <section class="contact-section">
+
+          <h2>
+            Contato
+          </h2>
+
+          <p>
+            contato@arckeosys.com
+          </p>
+
+        </section>
+
+      </aside>
+
+      
+      <section class="authentication-panel">
+
+        <header class="login-header">
+
+          <h2>
+            Acesse sua Conta
+          </h2>
+
+          <p>
+            Informe suas credenciais para continuar.
+          </p>
+
+        </header>
+
+        <form
+          id="loginForm"
+          class="login-form"
+          novalidate
+        >
+
+          <div class="form-group">
+
+            <label for="email">
+              E-mail
+            </label>
+
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="Digite seu e-mail"
+              autocomplete="email"
+              required
+            >
+
+          </div>
+
+          <div class="form-group">
+
+            <label for="senha">
+              Senha
+            </label>
+
+            <input
+              type="password"
+              id="senha"
+              name="senha"
+              placeholder="Digite sua senha"
+              autocomplete="current-password"
+              required
+            >
+
+          </div>
+
+          <button
+            type="submit"
+            class="login-button"
+          >
+            Entrar
+          </button>
+
+          <p
+            id="mensagemErro"
+            class="error-message"
+            role="alert"
+          ></p>
+
+        </form>
+
+        <footer class="login-footer">
+
+          <p>
+            ArckeoSys v1.0
+          </p>
+
+        </footer>
+
+      </section>
+
+    </section>
+
+  </main>
+
   <script src="login.js"></script>
+
 </body>
 
 </html>
