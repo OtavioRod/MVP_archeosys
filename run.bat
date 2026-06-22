@@ -1,14 +1,6 @@
-python -m venv .venv
-call .venv\Scripts\activate.bat
+py -3.13 -m pip install poetry
 
-REM Instala Poetry dentro do venv
-python -m pip install --upgrade pip
-python -m pip install poetry
+poetry env use 3.13
+poetry install
 
-::start http://localhost:8000/app/login.html
-
-REM Agora você pode usar
-python -m poetry install
-python -m poetry run fastapi dev mvp_archeosys/app.py
-
-pause
+poetry run fastapi dev mvp_archeosys/app.py
