@@ -1,17 +1,14 @@
 const API_URL = "http://localhost:8000";
 
-// PEGA O TOKEN DA SUA SESSÃO (Caso o backend precise dele)
+// pega o token da sua sessão (Caso o backend precise dele)
 const TOKEN = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 
-// Configuração padrão de cabeçalho unificada com autenticação opcional
 const headersPadrao = {
   "Content-Type": "application/json",
   ...(TOKEN ? { "Authorization": `Bearer ${TOKEN}` } : {})
 };
 
-// ==========================================================================
-// ELEMENTOS DA TELA
-// ==========================================================================
+// elementos da tela
 const tabela = document.querySelector("#tabela tbody");
 
 const formEscola = document.getElementById("formEscola");
@@ -44,9 +41,7 @@ const btnExcluirEmail = document.getElementById("btnExcluirEmail");
 
 let idSelecionado = null;
 
-// ==========================================================================
-// INTERNOCIONALIZAÇÃO / EXIBIÇÃO DE CARDS
-// ==========================================================================
+//exibição dos cards
 btnMostrarEscola.addEventListener("click", () => {
   cardEscola.style.display = "block";
   cardDiretor.style.display = "none";
@@ -70,9 +65,8 @@ if (btnListarTudo) {
 fecharEditar.addEventListener("click", () => modalEditar.close());
 fecharExcluir.addEventListener("click", () => modalExcluir.close());
 
-// ==========================================================================
-// POPULAR SELECT DE ESCOLAS DINAMICAMENTE
-// ==========================================================================
+// select de escolas 
+
 async function atualizarSelectEscolas() {
   try {
     const resp = await fetch(`${API_URL}/escolas/`, { headers: headersPadrao });
@@ -86,7 +80,7 @@ async function atualizarSelectEscolas() {
       const nome = e.nome || e.nomeEscola || "";
       if (nome) {
         const option = document.createElement("option");
-        // Mantendo compatibilidade com seu backend original: envia o nome do texto puro
+        
         option.value = nome; 
         option.textContent = nome;
         selectEscolaDiretor.appendChild(option);
@@ -97,9 +91,8 @@ async function atualizarSelectEscolas() {
   }
 }
 
-// ==========================================================================
-// BUSCAR E RENDERIZAR ESCOLAS E DIRETORES (READ)
-// ==========================================================================
+
+// buscar e renderizar escolas e diretores meu READ 
 async function carregarEscolas() {
   try {
     const resp = await fetch(`${API_URL}/escolas/`, { headers: headersPadrao });
@@ -147,15 +140,12 @@ async function carregarEscolas() {
   }
 }
 
-// Execução inicial ao carregar a página
 document.addEventListener("DOMContentLoaded", () => {
   carregarEscolas();
   atualizarSelectEscolas();
 });
 
-// ==========================================================================
-// REGISTRAR NOVA ESCOLA (CREATE)
-// ==========================================================================
+// registrar nova escola CREATE
 formEscola.addEventListener("submit", async (ev) => {
   ev.preventDefault();
 
@@ -173,7 +163,7 @@ formEscola.addEventListener("submit", async (ev) => {
     });
 
     if (r.status === 201 || r.ok) {
-      resposta.textContent = "✅ Escola cadastrada com sucesso.";
+      resposta.textContent = "Escola cadastrada com sucesso.";
       formEscola.reset();
       carregarEscolas();
       atualizarSelectEscolas();
@@ -187,9 +177,7 @@ formEscola.addEventListener("submit", async (ev) => {
   }
 });
 
-// ==========================================================================
-// REGISTRAR NOVO DIRETOR (CREATE)
-// ==========================================================================
+// registar novo diretor (CREATE)
 formDiretor.addEventListener("submit", async (ev) => {
   ev.preventDefault();
 
@@ -214,7 +202,7 @@ formDiretor.addEventListener("submit", async (ev) => {
     });
 
     if (resp.status === 201 || resp.ok) {
-      resposta.textContent = "✅ Diretor cadastrado com sucesso.";
+      resposta.textContent = "Diretor cadastrado com sucesso.";
       formDiretor.reset();
       carregarEscolas();
     } else if (resp.status === 409) {
@@ -227,9 +215,8 @@ formDiretor.addEventListener("submit", async (ev) => {
   }
 });
 
-// ==========================================================================
-// ESCUTA DE CLIQUES NA TABELA (DISPARAR MODAIS)
-// ==========================================================================
+// disparar modais 
+
 tabela.addEventListener("click", async (event) => {
   const id = event.target.dataset.id;
   if (!id) return;
@@ -260,9 +247,7 @@ tabela.addEventListener("click", async (event) => {
   }
 });
 
-// ==========================================================================
-// SALVAR ALTERAÇÃO CADASTRAL (UPDATE)
-// ==========================================================================
+// salva ação do cadastro (UPDATE)
 formEditar.addEventListener("submit", async (event) => { 
   event.preventDefault(); 
   
@@ -276,7 +261,7 @@ formEditar.addEventListener("submit", async (event) => {
   };
 
   try {
-    // CORREÇÃO: Adicionadas as crases para a Template Literal
+
     await fetch(`${API_URL}/escolas/${idSelecionado}`, {
       method: "PUT",
       headers: headersPadrao,
@@ -289,12 +274,11 @@ formEditar.addEventListener("submit", async (event) => {
   }
 });
 
-// ==========================================================================
-// SISTEMA DE EXCLUSÕES (TOTAIS E PARCIAIS VIA BODY/DELETE)
-// ==========================================================================
+
+// exclusões
 async function realizarExclusao(tipo) {
   try {
-    // CORREÇÃO: Adicionadas as crases para a Template Literal
+  
     await fetch(`${API_URL}/escolas/${idSelecionado}`, {
       method: "DELETE",
       headers: headersPadrao,
@@ -304,7 +288,7 @@ async function realizarExclusao(tipo) {
     carregarEscolas();
     atualizarSelectEscolas();
   } catch (err) {
-    // CORREÇÃO: Adicionadas as aspas/crases e fechamento correto no console.error
+    
     console.error(`Erro ao tentar deletar (${tipo}):`, err);
   }
 }

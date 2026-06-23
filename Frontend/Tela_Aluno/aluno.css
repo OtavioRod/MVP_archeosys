@@ -59,7 +59,7 @@ footer {
   color: #888;
 }
 
-/* ======= BOTÕES DE NAVEGAÇÃO ======= */
+/*btn de nav*/
 nav.menu {
   display: flex;
   justify-content: center;
@@ -93,7 +93,7 @@ nav.menu {
   transform: scale(1.05);
 }
 
-/* ======= TRANSIÇÃO DAS SEÇÕES ======= */
+/* transição de seções*/
 main section {
   opacity: 0;
   transform: translateY(10px);

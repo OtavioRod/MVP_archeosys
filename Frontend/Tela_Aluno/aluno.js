@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const backend = "http://localhost:8000";
 
   try {
-    // ---------- PERFIL ----------
+    //perfil 
     const perfilResp = await fetch("http://localhost:8000/aluno/perfil", {
       credentials: "include",
 
@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <div><strong>Escola:</strong> ${aluno.escola}</div>
     `;
 
-    // ---------- NOTAS ----------
+    //notas
     const notasResp = await fetch("http://localhost:8000/aluno/notas", {
       credentials: "include",
     });
@@ -47,7 +47,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
     }
 
-    // ---------- DISCIPLINAS ----------
+    //disciplinas
     const disciplinasResp = await fetch("http://localhost:8000/aluno/disciplinas", {
       credentials: "include",
     });
@@ -63,7 +63,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       disciplinaSelect.appendChild(option);
     });
 
-    // ---------- PRESENÇAS ----------
+    //presenças
     disciplinaSelect.addEventListener("change", async () => {
       const disciplina = disciplinaSelect.value;
       if (!disciplina) {
