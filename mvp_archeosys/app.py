@@ -1161,21 +1161,21 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
         if not aluno:
             raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
-        #escola = s.get(Base.classes.escolas, aluno.id_escolas)
-        #if not escola:
-        #    raise HTTPException(status_code=404, detail="Escola não encontrada")
+        escola = s.get(Base.classes.escolas, aluno.id_escolas)
+        if not escola:
+            raise HTTPException(status_code=404, detail="Escola não encontrada")
 
-        #turma_aluno = s.scalars(
-        #    select(Base.classes.turma_alunos)
-        #    .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
-        #).first()
+        turma_aluno = s.scalars(
+            select(Base.classes.turma_alunos)
+            .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
+        ).first()
 
-        #if not turma_aluno:
-        #    raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
-#
-        #turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
-        #if not turma:
-        #    raise HTTPException(status_code=404, detail="Turma não encontrada")
+        if not turma_aluno:
+            raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
+
+        turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
+        if not turma:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
 
         usuario_BD = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == aluno.id_usuarios)
@@ -1188,8 +1188,8 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
 
         return {
             "nome": usuario_BD.nome_usuarios,
-            #"turma": turma.nome_turma,
-            #"escola": escola.nome,
+            "turma": turma.nome_turma,
+            "escola": escola.nome,
         }
 
 
