@@ -70,7 +70,6 @@ def prepare_base():
 
     DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
-    global engine, Base, SessionLocal, session, metadata
     engine = create_engine(URL_DATABASE)#env
     Base = automap_base()
     Base.prepare(autoload_with=engine)
