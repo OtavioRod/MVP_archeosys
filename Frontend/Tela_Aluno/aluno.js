@@ -1,108 +1,239 @@
-document.addEventListener("DOMContentLoaded", async () => {
-  const alunoInfoDiv = document.getElementById("alunoInfo");
-  const notasDiv = document.getElementById("notas");
-  const disciplinaSelect = document.getElementById("disciplinaSelect");
-  const presencasDiv = document.getElementById("presencas");
+const backend = "http://localhost:8000";
 
-  const backend = "http://localhost:8000";
+document.addEventListener("DOMContentLoaded", () => {
+  inicializarPainel();
+});
 
+async function inicializarPainel() {
   try {
-    // ---------- PERFIL ----------
-    const perfilResp = await fetch("http://localhost:8000/aluno/perfil", {
+    await carregarPerfil();
+    await carregarNotas();
+    await carregarDisciplinas();
+
+    document
+      .getElementById("disciplinaSelect")
+      .addEventListener("change", carregarPresencas);
+
+  } catch (erro) {
+    console.error(erro);
+    alert("Erro ao carregar os dados do aluno.");
+  }
+}
+
+// ==============================
+// PERFIL
+// ==============================
+
+async function carregarPerfil() {
+
+  const resposta = await fetch(
+    `${backend}/aluno/perfil`,
+    {
       credentials: "include",
+    }
+  );
 
-    });
+  if (!resposta.ok) {
+    throw new Error("Erro ao buscar perfil.");
+  }
 
-    if (!perfilResp.ok) throw new Error("Erro ao buscar perfil");
+  const aluno = await resposta.json();
 
-    const aluno = await perfilResp.json();
+  document.getElementById("alunoInfo").innerHTML = `
+    <div class="card">
+      <strong>Nome</strong>
+      <p>${aluno.nome}</p>
+    </div>
 
-    alunoInfoDiv.innerHTML = `
-      <div><strong>Nome:</strong> ${aluno.nome}</div>
-      <div><strong>Turma:</strong> ${aluno.turma}</div>
-      <div><strong>Escola:</strong> ${aluno.escola}</div>
+    <div class="card">
+      <strong>Turma</strong>
+      <p>${aluno.turma}</p>
+    </div>
+
+    <div class="card">
+      <strong>Escola</strong>
+      <p>${aluno.escola}</p>
+    </div>
+  `;
+}
+
+// ==============================
+// NOTAS
+// ==============================
+
+async function carregarNotas() {
+
+  const resposta = await fetch(
+    `${backend}/aluno/notas`,
+    {
+      credentials: "include",
+    }
+  );
+
+  if (!resposta.ok) {
+    throw new Error("Erro ao carregar notas.");
+  }
+
+  const notas = await resposta.json();
+
+  const container =
+    document.getElementById("notas");
+
+  container.innerHTML = "";
+
+  if (notas.length === 0) {
+
+    container.innerHTML =
+      "<p>Nenhuma nota cadastrada.</p>";
+
+    return;
+  }
+
+  notas.forEach((nota) => {
+
+    const card =
+      document.createElement("div");
+
+    card.className = "card";
+
+    card.innerHTML = `
+      <strong>${nota.disciplina}</strong>
+
+      <p>Bimestre: ${nota.bimestre}</p>
+
+      <p>Nota: ${nota.nota}</p>
     `;
 
-    // ---------- NOTAS ----------
-    const notasResp = await fetch("http://localhost:8000/aluno/notas", {
+    container.appendChild(card);
+
+  });
+
+}
+
+// ==============================
+// DISCIPLINAS
+// ==============================
+
+async function carregarDisciplinas() {
+
+  const resposta = await fetch(
+    `${backend}/aluno/disciplinas`,
+    {
       credentials: "include",
-    });
+    }
+  );
 
-    if (!notasResp.ok) throw new Error("Erro ao carregar notas");
+  if (!resposta.ok) {
+    throw new Error("Erro ao carregar disciplinas.");
+  }
 
-    const notas = await notasResp.json();
+  const disciplinas =
+    await resposta.json();
 
-    if (notas.length === 0) {
-      notasDiv.innerHTML = "<p>Nenhuma nota cadastrada ainda.</p>";
-    } else {
-      notas.forEach((nota) => {
-        const card = document.createElement("div");
-        card.className = "card";
-        card.innerHTML = `
-          <strong>Disciplina:</strong> ${nota.disciplina}<br>
-          <strong>Bimestre:</strong> ${nota.bimestre}<br>
-          <strong>Nota:</strong> ${nota.nota}
-        `;
-        notasDiv.appendChild(card);
-      });
+  const select =
+    document.getElementById("disciplinaSelect");
+
+  select.innerHTML = `
+    <option value="">
+      Selecione uma disciplina
+    </option>
+  `;
+
+  disciplinas.forEach((disciplina) => {
+
+    const option =
+      document.createElement("option");
+
+    option.value = disciplina;
+    option.textContent = disciplina;
+
+    select.appendChild(option);
+
+  });
+
+}
+
+// ==============================
+// PRESENÇAS
+// ==============================
+
+async function carregarPresencas() {
+
+  const disciplina =
+    document.getElementById("disciplinaSelect").value;
+
+  const container =
+    document.getElementById("presencas");
+
+  if (!disciplina) {
+
+    container.innerHTML =
+      "<p>Selecione uma disciplina.</p>";
+
+    return;
+
+  }
+
+  try {
+
+    const resposta = await fetch(
+      `${backend}/aluno/presencas?disciplina=${encodeURIComponent(disciplina)}`,
+      {
+        credentials: "include",
+      }
+    );
+
+    if (!resposta.ok) {
+      throw new Error();
     }
 
-    // ---------- DISCIPLINAS ----------
-    const disciplinasResp = await fetch("http://localhost:8000/aluno/disciplinas", {
-      credentials: "include",
+    const presencas =
+      await resposta.json();
+
+    container.innerHTML = "";
+
+    if (presencas.length === 0) {
+
+      container.innerHTML =
+        "<p>Nenhuma presença encontrada.</p>";
+
+      return;
+
+    }
+
+    presencas.forEach((presenca) => {
+
+      const card =
+        document.createElement("div");
+
+      card.className = "card";
+
+      card.innerHTML = `
+        <strong>Data</strong>
+
+        <p>${presenca.data}</p>
+
+        <p>
+          Status:
+          ${presenca.presente ? "Presente" : "Faltou"}
+        </p>
+
+        <p>
+          Justificativa:
+          ${presenca.justificativa || "-"}
+        </p>
+      `;
+
+      container.appendChild(card);
+
     });
 
-    if (!disciplinasResp.ok) throw new Error("Erro ao carregar disciplinas");
+  } catch (erro) {
 
-    const disciplinas = await disciplinasResp.json();
+    console.error(erro);
 
-    disciplinas.forEach((nome) => {
-      const option = document.createElement("option");
-      option.value = nome;
-      option.textContent = nome;
-      disciplinaSelect.appendChild(option);
-    });
+    alert("Erro ao carregar presenças.");
 
-    // ---------- PRESENÇAS ----------
-    disciplinaSelect.addEventListener("change", async () => {
-      const disciplina = disciplinaSelect.value;
-      if (!disciplina) {
-        presencasDiv.innerHTML = "<p>Selecione uma disciplina para ver as presenças.</p>";
-        return;
-      }
-
-      try {
-        const resp = await fetch(`http://localhost:8000/aluno/presencas?disciplina=${encodeURIComponent(disciplina)}`, {
-          credentials: "include",
-        });
-
-        if (!resp.ok) throw new Error("Erro ao carregar presenças");
-
-        const presencas = await resp.json();
-        presencasDiv.innerHTML = "";
-
-        if (presencas.length === 0) {
-          presencasDiv.innerHTML = "<p>Nenhuma presença registrada para essa disciplina.</p>";
-        } else {
-          presencas.forEach((p) => {
-            const card = document.createElement("div");
-            card.className = "card";
-            card.innerHTML = `
-              <strong>Data:</strong> ${p.data}<br>
-              <strong>Status:</strong> ${p.presente ? "Presente" : "Faltou"}<br>
-              <strong>Justificativa:</strong> ${p.justificativa || "-"}
-            `;
-            presencasDiv.appendChild(card);
-          });
-        }
-      } catch (err) {
-        console.error(err);
-        alert("Erro ao carregar presenças.");
-      }
-    });
-
-  } catch (err) {
-    console.error(err);
-    alert("Erro ao carregar dados.");
   }
-});
+
+}

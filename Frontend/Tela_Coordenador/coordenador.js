@@ -195,7 +195,7 @@ document.addEventListener("DOMContentLoaded", () => {
     turma: fd.get("turma"),
   }));
 
-  // ======== TABELAS COM BOTÃO EDITAR ========
+  // tabela com btn EDITAR 
 
   async function carregarTurmas() {
     try {

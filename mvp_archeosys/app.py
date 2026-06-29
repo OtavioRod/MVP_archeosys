@@ -13,6 +13,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from sqlalchemy import func
 from fastapi import Request
+from datetime import date
 from dotenv import load_dotenv
 import os
 import webbrowser
@@ -43,7 +44,7 @@ app.add_middleware(
 )
 
 def ensure_database():
-    default_url = "postgresql://postgres:univassouras@localhost:5432/postgres"
+    default_url = "postgresql://postgres:admin@localhost:5432/postgres"
     target_db = "MVP"
 
     engine = create_engine(default_url)
@@ -64,6 +65,11 @@ def ensure_database():
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 def prepare_base():
+    ensure_database()
+    global engine, Base, SessionLocal, metadata
+
+    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
+    engine = create_engine(DATABASE_URL)
     global engine, Base, SessionLocal, session, metadata
     engine = create_engine(URL_DATABASE)#env
     Base = automap_base()
@@ -975,17 +981,11 @@ def atualizar_nota(notas: NotasCreate, usuario=Depends(somente_professor)):
 
 import logging
 logger = logging.getLogger(__name__)
-
+'''
 @app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somente_professor)):
     logger.info(f"Recebido: {relatorioaula}")
     with Session(engine) as s:
-#        usuario_professor = s.scalars(
-#            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == relatorioaula.professor)
-#        ).first()
-#        professor = s.scalars(
-#            select(Base.classes.professores).where(Base.classes.professores.id_usuarios == usuario_professor.id_usuarios)
-#        ).first()
 
         professor = s.scalars(
             select(Base.classes.professores).where(Base.classes.professores.id_usuarios == usuario["id"])
@@ -1000,7 +1000,51 @@ def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somen
             )
         s.add(novo_relatorioaula)
         s.commit()
+'''
+@app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)
+def cadastrar_relatorio_aula(
+    relatorioaula: RelatorioAula,
+    usuario=Depends(somente_professor)
+    ):
+    logger.info(f"Recebido: {relatorioaula}")
 
+    with Session(engine) as s:
+        professor = s.scalars(
+            select(Base.classes.professores)
+            .where(Base.classes.professores.id_usuarios == usuario["id"])
+        ).first()
+
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(Base.classes.disciplinas.nome_disciplina == relatorioaula.disciplina)
+        ).first()
+
+        hoje = date.today()
+
+        relatorio_existente = s.scalars(
+            select(Base.classes.relatorios_aula).where(
+                Base.classes.relatorios_aula.id_professores == professor.id_professores,
+                Base.classes.relatorios_aula.id_disciplinas == disciplina.id_disciplinas,
+                Base.classes.relatorios_aula.data == hoje
+            )
+        ).first()
+
+        if relatorio_existente:
+            relatorio_existente.conteudo = relatorioaula.conteudo
+            relatorio_existente.metodologia = relatorioaula.metodologia
+            relatorio_existente.recursos = relatorioaula.recursos
+        else:
+            novo_relatorioaula = Base.classes.relatorios_aula(
+                id_professores=professor.id_professores,
+                id_disciplinas=disciplina.id_disciplinas,
+                data=hoje,
+                conteudo=relatorioaula.conteudo,
+                metodologia=relatorioaula.metodologia,
+                recursos=relatorioaula.recursos
+            )
+            s.add(novo_relatorioaula)
+
+        s.commit()
 
 @app.get("/alunorelatorio/")
 def relatorio_de_aluno(usuario=Depends(somente_aluno)):
@@ -1130,21 +1174,21 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
         if not aluno:
             raise HTTPException(status_code=404, detail="Aluno não encontrado")
 
-        #escola = s.get(Base.classes.escolas, aluno.id_escolas)
-        #if not escola:
-        #    raise HTTPException(status_code=404, detail="Escola não encontrada")
+        escola = s.get(Base.classes.escolas, aluno.id_escolas)
+        if not escola:
+            raise HTTPException(status_code=404, detail="Escola não encontrada")
 
-        #turma_aluno = s.scalars(
-        #    select(Base.classes.turma_alunos)
-        #    .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
-        #).first()
+        turma_aluno = s.scalars(
+            select(Base.classes.turma_alunos)
+            .where(Base.classes.turma_alunos.id_alunos == aluno.id_alunos)
+        ).first()
 
-        #if not turma_aluno:
-        #    raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
-#
-        #turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
-        #if not turma:
-        #    raise HTTPException(status_code=404, detail="Turma não encontrada")
+        if not turma_aluno:
+            raise HTTPException(status_code=404, detail="Aluno não está vinculado a nenhuma turma")
+
+        turma = s.get(Base.classes.turmas, turma_aluno.id_turmas)
+        if not turma:
+            raise HTTPException(status_code=404, detail="Turma não encontrada")
 
         usuario_BD = s.scalars(
             select(Base.classes.usuarios).where(Base.classes.usuarios.id_usuarios == aluno.id_usuarios)
@@ -1157,8 +1201,8 @@ def perfil_aluno(usuario=Depends(somente_aluno)):
 
         return {
             "nome": usuario_BD.nome_usuarios,
-            #"turma": turma.nome_turma,
-            #"escola": escola.nome,
+            "turma": turma.nome_turma,
+            "escola": escola.nome,
         }
 
 
@@ -1933,72 +1977,214 @@ def deletar_disciplina_coordenador(disciplina: DeletarDisciplina, usuario=Depend
 #criar presença
 #atualizar, deletar, presenca, nota, justificativa, Relatório
 
-
-
-#criar presenca
+# criar presenca
 @app.post("/presenca/")
-def criar_presenca(presenca: CriarPresenca, usuario=Depends(somente_professor)):
+def criar_presenca(
+    presenca: CriarPresenca,
+    usuario=Depends(somente_professor)
+):
     with Session(engine) as s:
+
         usuario_aluno_bd = s.scalars(
             select(Base.classes.usuarios)
-            .where(Base.classes.usuarios.nome_usuarios == presenca.aluno)
+            .where(
+                Base.classes.usuarios.nome_usuarios == presenca.aluno
+            )
         ).first()
+
         if not usuario_aluno_bd:
-            raise HTTPException(status_code=404, detail="Usuário do aluno não encontrado")
+            raise HTTPException(
+                status_code=404,
+                detail="Usuário do aluno não encontrado"
+            )
+
         
         aluno_bd = s.scalars(
             select(Base.classes.alunos)
-            .where(Base.classes.alunos.id_usuarios == usuario_aluno_bd.id_usuarios)
+            .where(
+                Base.classes.alunos.id_usuarios == usuario_aluno_bd.id_usuarios
+            )
         ).first()
 
         if not aluno_bd:
-            raise HTTPException(status_code=404, detail="Aluno não encontrado")
+            raise HTTPException(
+                status_code=404,
+                detail="Aluno não encontrado"
+            )
 
+        
+        disciplina_bd = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(
+                Base.classes.disciplinas.nome_disciplina == presenca.disciplina
+            )
+        ).first()
+
+        if not disciplina_bd:
+            raise HTTPException(
+                status_code=404,
+                detail="Disciplina não encontrada"
+            )
+
+       
         nova_presenca = Base.classes.presencas(
-            aluno=aluno_bd.id_alunos,
-            disciplina=presenca.disciplina,
+            id_alunos=aluno_bd.id_alunos,
+            id_disciplinas=disciplina_bd.id_disciplinas,
+            data=date.today(),
             presente=presenca.presente,
             justificativa=presenca.justificativa
         )
 
         s.add(nova_presenca)
         s.commit()
-        return {"message": "Presença criada com sucesso"}
+
+        return {
+            "message": "Presença criada com sucesso"
+        }
 
 #atualizar presenca
 @app.put("/presenca/")
-def atualizar_presenca(presenca: AtualizarPresenca, usuario=Depends(somente_professor)):
+def atualizar_presenca(
+    presenca: AtualizarPresenca,
+    usuario=Depends(somente_professor)
+):
     with Session(engine) as s:
+
+        
+        usuario_aluno = s.scalars(
+            select(Base.classes.usuarios)
+            .where(
+                Base.classes.usuarios.nome_usuarios == presenca.aluno
+            )
+        ).first()
+
+        if not usuario_aluno:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuário do aluno não encontrado"
+            )
+
+        
+        aluno = s.scalars(
+            select(Base.classes.alunos)
+            .where(
+                Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios
+            )
+        ).first()
+
+        if not aluno:
+            raise HTTPException(
+                status_code=404,
+                detail="Aluno não encontrado"
+            )
+
+        
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(
+                Base.classes.disciplinas.nome_disciplina == presenca.disciplina
+            )
+        ).first()
+
+        if not disciplina:
+            raise HTTPException(
+                status_code=404,
+                detail="Disciplina não encontrada"
+            )
+
+        
         presenca_bd = s.scalars(
             select(Base.classes.presencas)
-            .where(Base.classes.presencas.id_presenca == presenca.id_presenca)
+            .where(
+                Base.classes.presencas.id_alunos == aluno.id_alunos,
+                Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas
+            )
         ).first()
-        if not presenca_bd:
-            raise HTTPException(status_code=404, detail="Presença não encontrada")
 
+        if not presenca_bd:
+            raise HTTPException(
+                status_code=404,
+                detail="Presença não encontrada"
+            )
+
+       
         presenca_bd.presente = presenca.presente
         presenca_bd.justificativa = presenca.justificativa
 
         s.commit()
-        return {"message": "Presença atualizada com sucesso"}
+        s.refresh(presenca_bd)
+
+        return {
+            "message": "Presença atualizada com sucesso"
+        }
 
 #deletar presenca
-@app.delete("/presenca/{id_presenca}", status_code=status.HTTP_200_OK)
-def deletar_presenca(presenca: DeletarPresenca, usuario=Depends(somente_professor)):
+@app.delete("/presenca/")
+def deletar_presenca(
+    presenca: DeletarPresenca,
+    usuario=Depends(somente_professor)
+):
     with Session(engine) as s:
+
+        usuario_aluno = s.scalars(
+            select(Base.classes.usuarios)
+            .where(
+                Base.classes.usuarios.nome_usuarios == presenca.aluno
+            )
+        ).first()
+
+        if not usuario_aluno:
+            raise HTTPException(
+                status_code=404,
+                detail="Usuário do aluno não encontrado"
+            )
+
+        aluno = s.scalars(
+            select(Base.classes.alunos)
+            .where(
+                Base.classes.alunos.id_usuarios == usuario_aluno.id_usuarios
+            )
+        ).first()
+
+        if not aluno:
+            raise HTTPException(
+                status_code=404,
+                detail="Aluno não encontrado"
+            )
+
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(
+                Base.classes.disciplinas.nome_disciplina == presenca.disciplina
+            )
+        ).first()
+
+        if not disciplina:
+            raise HTTPException(
+                status_code=404,
+                detail="Disciplina não encontrada"
+            )
+
         presenca_bd = s.scalars(
             select(Base.classes.presencas)
-            .where(Base.classes.presencas.id_presenca == presenca.id_presenca)
+            .where(
+                Base.classes.presencas.id_alunos == aluno.id_alunos,
+                Base.classes.presencas.id_disciplinas == disciplina.id_disciplinas
+            )
         ).first()
+
         if not presenca_bd:
             raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Presença não encontrada no banco"
+                status_code=404,
+                detail="Presença não encontrada"
             )
 
         s.delete(presenca_bd)
         s.commit()
-        return {"message": "Presença deletada com sucesso"}
+
+        return {
+            "message": "Presença deletada com sucesso"
+        }
     
 #atualizar nota
 @app.put("/nota/")
@@ -2077,7 +2263,8 @@ def listar_relatorios(usuario=Depends(somente_professor)):
 
         relatorios = s.scalars(
             select(Base.classes.relatorios_aula)
-        ).where(Base.classes.relatorios_aula.id_professores == professor_bd.id_professores).all()
+            .where(Base.classes.relatorios_aula.id_professores == professor_bd.id_professores)
+        ).all()
         return relatorios
 
 #Atualizar Relatório

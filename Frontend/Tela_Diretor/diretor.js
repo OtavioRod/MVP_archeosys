@@ -1,13 +1,13 @@
-/* ----------------------------
+/* 
    ARCKEOSYS — PAINEL DO DIRETOR
    Funcionalidades da tela diretor
    Objetivo: Gerenciar coordenadores (CRUD)
-   Estou organizando, siga os Comentarios!, para entender a logica. 
+   Estou organizando, sigam os Comentarios!, para entender a logica. 
  */
 
 document.addEventListener("DOMContentLoaded", async () => {
   // AUTENTICAÇÃO
-  // ---------------
+  // 
   const token = localStorage.getItem("token");
   if (!token) {
     alert("Sessão expirada. Faça login novamente.");
@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // ------------------------------------------------------
+  // 
   // ELEMENTOS GERAIS
   const nomeDiretorEl = document.getElementById("nomeDiretor");
   const nomeEscolaEl = document.getElementById("nomeEscola");
@@ -32,7 +32,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const listaCoordenadoresEl = document.getElementById("listaCoordenadores");
   const btnListar = document.getElementById("btnListar");
 
-  // -------------------------------------------------------------
+  // 
   // BOTÕES DE NAVEGAÇÃO
   const botoesNav = {
     inicio: document.getElementById("btnInicio"),
@@ -51,7 +51,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     excluir: document.getElementById("excluir"),
   };
 
-  // --------------------------------------------------------------
+  // 
   // FUNÇÕES AUXILIARES ( documentada para não haver erros.)
   /**
    * Exibe apenas a seção selecionada e atualiza o botão ativo.
@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  // =====================================================
+  // 
   // INICIALIZAÇÃO DE TELA
 
   // Exibir seção inicial por padrão
@@ -131,9 +131,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "/app/login.html";
   });
 
-  // =====================================================
+  
   // DADOS DO DIRETOR
-  // =====================================================
+ 
   try {
     const dados = await requisicaoSegura("http://localhost:8000/escoladiretor/", {
       method: "GET",
@@ -148,9 +148,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.location.href = "login.html";
   }
 
-  // =====================================================
+ 
   // CADASTRAR COORDENADOR
-  // =====================================================
+  
   formCadastro?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -182,9 +182,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // =====================================================
   // LISTAR COORDENADORES
-  // =====================================================
+  
   btnListar?.addEventListener("click", async () => {
     listaCoordenadoresEl.innerHTML = "<li>Carregando lista...</li>";
 
@@ -211,9 +210,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // =====================================================
+ 
   // ATUALIZAR COORDENADOR
-  // =====================================================
+ 
   formAtualizar?.addEventListener("submit", async (e) => {
     e.preventDefault();
 
@@ -243,9 +242,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
-  // =====================================================
+ 
   // EXCLUIR COORDENADOR
-  // =====================================================
+
   formExcluir?.addEventListener("submit", async (e) => {
     e.preventDefault();
 

@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ArckeoSys | Diario do Professor</title>
   <link rel="stylesheet" href="professor.css">
 </head>
+
 <body>
   <header class="topbar">
     <div class="brand">
@@ -32,11 +34,16 @@
       <div class="page-title">
         <p class="eyebrow">Diario de classe</p>
         <h2>Lancamento da aula</h2>
-        <p>Escolha a turma e a disciplina para iniciar ou continuar o registro do dia.</p>
+        <p>Crie, continue, salve ou finalize o diario da aula sem perder informacoes.</p>
       </div>
 
       <section class="formulario" aria-labelledby="selecionar-aula">
         <h3 id="selecionar-aula">Selecionar aula</h3>
+
+        <div class="campo">
+          <label for="data-aula-input">Data da aula</label>
+          <input id="data-aula-input" type="date">
+        </div>
 
         <div class="campo">
           <label for="turma-select">Turma</label>
@@ -61,7 +68,11 @@
     <section id="alunos-section" class="diario-layout" style="display:none;">
       <aside class="aula-sidebar">
         <section class="card aula-card">
-          <p class="eyebrow">Aula do dia</p>
+          <div class="status-header">
+            <p class="eyebrow">Aula do dia</p>
+            <span id="status-diario" class="badge status-rascunho">Rascunho</span>
+          </div>
+
           <h2 id="data-aula">--/--/----</h2>
 
           <dl class="info-aula">
@@ -69,6 +80,7 @@
               <dt>Turma</dt>
               <dd id="turma-atual">-</dd>
             </div>
+
             <div>
               <dt>Disciplina</dt>
               <dd id="disciplina-atual">-</dd>
@@ -76,10 +88,44 @@
           </dl>
         </section>
 
+        <section class="card checklist-card">
+          <p class="eyebrow">Checklist do diario</p>
+
+          <ul class="checklist-diario">
+            <li id="check-frequencia" class="check-pendente">Frequencia realizada</li>
+            <li id="check-conteudo" class="check-pendente">Conteudo registrado</li>
+            <li id="check-avaliacao" class="check-neutro">Avaliacao nao aplicada</li>
+            <li id="check-tarefa" class="check-neutro">Tarefa nao cadastrada</li>
+            <li id="check-pronto" class="check-pendente">Diario pronto para finalizar</li>
+          </ul>
+        </section>
+
+        <section class="card sync-card">
+          <div class="status-header">
+            <p class="eyebrow">Sincronizacao</p>
+            <span id="sync-status" class="badge status-rascunho">Local</span>
+          </div>
+
+          <ul class="sync-list">
+            <li id="sync-presenca">Frequencia: aguardando</li>
+            <li id="sync-notas">Notas: aguardando</li>
+            <li id="sync-relatorio">Relatorio: aguardando</li>
+          </ul>
+
+          <div id="pendencias-box" class="pendencias-box" style="display:none;">
+            <strong>Pendencias</strong>
+            <div id="pendencias-list"></div>
+
+            <button class="btn secundario btn-small" type="button" onclick="reenviarPendencias()">
+              Reenviar pendencias
+            </button>
+          </div>
+        </section>
+
         <section class="status-aula" aria-label="Status da aula">
           <span id="status-presenca" class="status-pendente">Frequencia pendente</span>
-          <span id="status-notas" class="status-pendente">Notas pendentes</span>
-          <span id="status-relatorio" class="status-pendente">Relatorio pendente</span>
+          <span id="status-notas" class="status-ok">Sem avaliacao hoje</span>
+          <span id="status-relatorio" class="status-pendente">Registro pendente</span>
         </section>
 
         <section class="resumo-diario" aria-label="Resumo do diario">
@@ -87,17 +133,25 @@
             <h4>Alunos</h4>
             <span id="total-alunos">0</span>
           </div>
+
           <div class="card-resumo positivo">
             <h4>Presentes</h4>
             <span id="total-presentes">0</span>
           </div>
+
           <div class="card-resumo alerta">
             <h4>Ausentes</h4>
             <span id="total-ausentes">0</span>
           </div>
+
+          <div class="card-resumo destaque">
+            <h4>Presenca</h4>
+            <span id="percentual-presenca">0%</span>
+          </div>
+
           <div class="card-resumo destaque">
             <h4>Media avaliacao</h4>
-            <span id="media-turma">0.0</span>
+            <span id="media-turma">-</span>
           </div>
         </section>
       </aside>
@@ -107,11 +161,17 @@
           <button class="tab-btn active" data-aba="frequencia" type="button" onclick="abrirAba('frequencia')">
             Frequencia <span id="contador-presentes">0</span>
           </button>
+
           <button class="tab-btn" data-aba="relatorio" type="button" onclick="abrirAba('relatorio')">
             Aula
           </button>
+
           <button class="tab-btn" data-aba="notas" type="button" onclick="abrirAba('notas')">
             Avaliacao <span id="contador-notas">0</span>
+          </button>
+
+          <button class="tab-btn" data-aba="historico" type="button" onclick="abrirAba('historico')">
+            Historico
           </button>
         </nav>
 
@@ -120,6 +180,8 @@
             <div>
               <p class="eyebrow">Chamada</p>
               <h3>Registro de presenca</h3>
+              <p class="section-note">Marque rapidamente a presenca da turma e registre justificativas quando
+                necessario.</p>
             </div>
 
             <div class="acoes-frequencia">
@@ -143,17 +205,80 @@
           </div>
         </section>
 
+        <section id="aba-relatorio" class="aba card" style="display:none;">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Registro pedagogico</p>
+              <h3>Resumo da aula</h3>
+              <p class="section-note">Use modelos rapidos e preencha apenas o que fizer sentido para a aula.</p>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('expositiva')">Aula expositiva</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('atividade')">Atividade pratica</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('revisao')">Revisao</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('grupo')">Trabalho em grupo</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('laboratorio')">Laboratorio</button>
+          </div>
+
+          <div class="grid-relatorio">
+            <div class="campo campo-textarea">
+              <label for="conteudo">Conteudo trabalhado</label>
+              <textarea id="conteudo"
+                placeholder="Ex.: Leitura orientada, interpretacao de texto e atividade pratica."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="metodologia">Metodologia</label>
+              <textarea id="metodologia"
+                placeholder="Ex.: Aula dialogada, grupos de estudo, resolucao acompanhada."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="recursos">Recursos utilizados</label>
+              <textarea id="recursos"
+                placeholder="Ex.: Livro didatico, quadro, projetor, folhas de atividade."></textarea>
+            </div>
+          </div>
+
+          <div class="opcoes-relatorio">
+            <label class="switch-line" for="houve-tarefa">
+              <input id="houve-tarefa" type="checkbox" onchange="alternarCampoExtra('tarefa')">
+              <span>Houve tarefa ou encaminhamento</span>
+            </label>
+
+            <label class="switch-line" for="houve-observacoes">
+              <input id="houve-observacoes" type="checkbox" onchange="alternarCampoExtra('observacoes')">
+              <span>Houve observacoes da turma</span>
+            </label>
+          </div>
+
+          <div id="campo-tarefa" class="campo campo-textarea campo-condicional" style="display:none;">
+            <label for="tarefa-casa">Tarefa ou encaminhamento</label>
+            <textarea id="tarefa-casa"
+              placeholder="Ex.: Concluir exercicios 1 a 5 ou trazer pesquisa para proxima aula."></textarea>
+          </div>
+
+          <div id="campo-observacoes" class="campo campo-textarea campo-condicional" style="display:none;">
+            <label for="observacoes-aula">Observacoes da turma</label>
+            <textarea id="observacoes-aula"
+              placeholder="Ex.: Turma participou bem; retomar o tema com alguns alunos na proxima aula."></textarea>
+          </div>
+        </section>
+
         <section id="aba-notas" class="aba card" style="display:none;">
           <div class="section-heading">
             <div>
               <p class="eyebrow">Opcional</p>
               <h3>Avaliacao da aula</h3>
-              <p class="section-note">Use apenas quando houver prova, trabalho, atividade avaliativa ou participacao registrada.</p>
+              <p class="section-note">Use apenas quando houver prova, trabalho, atividade avaliativa ou participacao
+                registrada.</p>
             </div>
           </div>
 
           <label class="switch-line" for="avaliacao-ativa">
-            <input id="avaliacao-ativa" type="checkbox" onchange="alternarAvaliacao()" />
+            <input id="avaliacao-ativa" type="checkbox" onchange="alternarAvaliacao()">
             <span>Esta aula teve avaliacao com nota</span>
           </label>
 
@@ -177,10 +302,10 @@
             <div class="campo">
               <label for="bimestre-avaliacao">Bimestre</label>
               <select id="bimestre-avaliacao">
-                <option value="1">1o bimestre</option>
-                <option value="2">2o bimestre</option>
-                <option value="3">3o bimestre</option>
-                <option value="4">4o bimestre</option>
+                <option value="1">1º bimestre</option>
+                <option value="2">2º bimestre</option>
+                <option value="3">3º bimestre</option>
+                <option value="4">4º bimestre</option>
               </select>
             </div>
           </div>
@@ -202,47 +327,33 @@
           </div>
         </section>
 
-        <section id="aba-relatorio" class="aba card" style="display:none;">
+        <section id="aba-historico" class="aba card" style="display:none;">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Registro pedagogico</p>
-              <h3>Resumo da aula</h3>
-              <p class="section-note">Campos curtos ajudam a registrar o que aconteceu sem tomar tempo da aula.</p>
+              <p class="eyebrow">Historico</p>
+              <h3>Diarios e relatorios</h3>
+              <p class="section-note">Consulte rascunhos locais e relatorios ja enviados ao backend.</p>
+            </div>
+
+            <div class="acoes-frequencia">
+              <button class="btn secundario" type="button" onclick="renderizarHistoricoDiarios()">Atualizar
+                historico</button>
+              <button class="btn neutro" type="button" onclick="carregarRelatoriosBackend()">Buscar relatorios
+                enviados</button>
             </div>
           </div>
 
-          <div class="quick-actions">
-            <button class="btn neutro" type="button" onclick="aplicarModeloAula('expositiva')">Aula expositiva</button>
-            <button class="btn neutro" type="button" onclick="aplicarModeloAula('atividade')">Atividade em sala</button>
-            <button class="btn neutro" type="button" onclick="aplicarModeloAula('revisao')">Revisao</button>
+          <h4 class="subtitulo-historico">Diarios locais</h4>
+          <div id="historico-vazio" class="empty-state">
+            Nenhum diario local encontrado neste navegador.
           </div>
+          <div id="historico-diarios" class="timeline-historico"></div>
 
-          <div class="grid-relatorio">
-            <div class="campo campo-textarea">
-              <label for="conteudo">Conteudo trabalhado</label>
-              <textarea id="conteudo" placeholder="Ex.: Leitura orientada, interpretacao de texto e atividade pratica."></textarea>
-            </div>
-
-            <div class="campo campo-textarea">
-              <label for="metodologia">Metodologia</label>
-              <textarea id="metodologia" placeholder="Ex.: Aula dialogada, grupos de estudo, resolucao acompanhada."></textarea>
-            </div>
-
-            <div class="campo campo-textarea">
-              <label for="recursos">Recursos utilizados</label>
-              <textarea id="recursos" placeholder="Ex.: Livro didatico, quadro, projetor, folhas de atividade."></textarea>
-            </div>
-
-            <div class="campo campo-textarea">
-              <label for="tarefa-casa">Tarefa ou encaminhamento</label>
-              <textarea id="tarefa-casa" placeholder="Ex.: Concluir exercicios 1 a 5 ou trazer pesquisa para proxima aula."></textarea>
-            </div>
-
-            <div class="campo campo-textarea">
-              <label for="observacoes-aula">Observacoes da turma</label>
-              <textarea id="observacoes-aula" placeholder="Ex.: Turma participou bem; retomar o tema com alguns alunos na proxima aula."></textarea>
-            </div>
+          <h4 class="subtitulo-historico">Relatorios enviados</h4>
+          <div id="relatorios-vazio" class="empty-state">
+            Nenhum relatorio carregado do backend.
           </div>
+          <div id="relatorios-backend" class="timeline-historico"></div>
         </section>
 
         <section class="card painel-acoes">
@@ -252,8 +363,10 @@
           </div>
 
           <div class="acoes-diario">
+            <button class="btn secundario" type="button" onclick="salvarRascunhoManual()">Salvar rascunho</button>
+            <button class="btn neutro" type="button" onclick="continuarDepois()">Continuar depois</button>
+            <button class="btn secundario" type="button" onclick="abrirAba('historico')">Historico</button>
             <button class="btn enviar" type="button" onclick="enviarDiario()">Finalizar aula</button>
-            <button class="btn secundario" type="button" onclick="mostrarVisualizacaoNotas()">Consultar registros</button>
           </div>
 
           <div id="mensagem-feedback" role="status"></div>
@@ -291,4 +404,5 @@
 
   <script src="professor.js"></script>
 </body>
+
 </html>
