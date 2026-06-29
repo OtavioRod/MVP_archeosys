@@ -98,10 +98,13 @@ CREATE TABLE relatorios_aula (
     id_professores INT REFERENCES professores(id_professores),
     id_disciplinas INT REFERENCES disciplinas(id_disciplinas),
     data DATE,
-    conteudo VARCHAR(100),
-    metodologia VARCHAR(100),
-    recursos VARCHAR(100)
+    conteudo VARCHAR(10000),
+    metodologia VARCHAR(10000),
+    recursos VARCHAR(10000)
 );
+--ALTER TABLE relatorios_aula ALTER COLUMN conteudo TYPE varchar(10000);
+--ALTER TABLE relatorios_aula ALTER COLUMN metodologia TYPE varchar(10000);
+--ALTER TABLE relatorios_aula ALTER COLUMN recursos TYPE varchar(10000);
 --Solicitacao de correcao
 CREATE TABLE solicitacoes_correcao (
     id_solicitacoes_correcao SERIAL PRIMARY KEY,

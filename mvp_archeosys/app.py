@@ -40,7 +40,7 @@ app.add_middleware(
 )
 
 def ensure_database():
-    default_url = "postgresql://postgres:01122000@localhost:5432/postgres"
+    default_url = "postgresql://postgres:admin@localhost:5432/postgres"
     target_db = "MVP"
 
     engine = create_engine(default_url)
@@ -64,7 +64,7 @@ def prepare_base():
     ensure_database()
     global engine, Base, SessionLocal, metadata
 
-    DATABASE_URL = "postgresql://postgres:01122000@localhost:5432/MVP"
+    DATABASE_URL = "postgresql://postgres:admin@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
 
     SessionLocal = sessionmaker(bind=engine, autocommit=False, autoflush=False)
@@ -1007,17 +1007,11 @@ def atualizar_nota(notas: NotasCreate, usuario=Depends(somente_professor)):
 
 import logging
 logger = logging.getLogger(__name__)
-
+'''
 @app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)  # Somente professor pode cadastrar
 def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somente_professor)):
     logger.info(f"Recebido: {relatorioaula}")
     with Session(engine) as s:
-#        usuario_professor = s.scalars(
-#            select(Base.classes.usuarios).where(Base.classes.usuarios.nome_usuarios == relatorioaula.professor)
-#        ).first()
-#        professor = s.scalars(
-#            select(Base.classes.professores).where(Base.classes.professores.id_usuarios == usuario_professor.id_usuarios)
-#        ).first()
 
         professor = s.scalars(
             select(Base.classes.professores).where(Base.classes.professores.id_usuarios == usuario["id"])
@@ -1032,7 +1026,51 @@ def cadastrar_relatorio_aula(relatorioaula: RelatorioAula, usuario=Depends(somen
             )
         s.add(novo_relatorioaula)
         s.commit()
+'''
+@app.post("/relatorioaula/", status_code=status.HTTP_201_CREATED)
+def cadastrar_relatorio_aula(
+    relatorioaula: RelatorioAula,
+    usuario=Depends(somente_professor)
+    ):
+    logger.info(f"Recebido: {relatorioaula}")
 
+    with Session(engine) as s:
+        professor = s.scalars(
+            select(Base.classes.professores)
+            .where(Base.classes.professores.id_usuarios == usuario["id"])
+        ).first()
+
+        disciplina = s.scalars(
+            select(Base.classes.disciplinas)
+            .where(Base.classes.disciplinas.nome_disciplina == relatorioaula.disciplina)
+        ).first()
+
+        hoje = date.today()
+
+        relatorio_existente = s.scalars(
+            select(Base.classes.relatorios_aula).where(
+                Base.classes.relatorios_aula.id_professores == professor.id_professores,
+                Base.classes.relatorios_aula.id_disciplinas == disciplina.id_disciplinas,
+                Base.classes.relatorios_aula.data == hoje
+            )
+        ).first()
+
+        if relatorio_existente:
+            relatorio_existente.conteudo = relatorioaula.conteudo
+            relatorio_existente.metodologia = relatorioaula.metodologia
+            relatorio_existente.recursos = relatorioaula.recursos
+        else:
+            novo_relatorioaula = Base.classes.relatorios_aula(
+                id_professores=professor.id_professores,
+                id_disciplinas=disciplina.id_disciplinas,
+                data=hoje,
+                conteudo=relatorioaula.conteudo,
+                metodologia=relatorioaula.metodologia,
+                recursos=relatorioaula.recursos
+            )
+            s.add(novo_relatorioaula)
+
+        s.commit()
 
 @app.get("/alunorelatorio/")
 def relatorio_de_aluno(usuario=Depends(somente_aluno)):
@@ -2251,7 +2289,8 @@ def listar_relatorios(usuario=Depends(somente_professor)):
 
         relatorios = s.scalars(
             select(Base.classes.relatorios_aula)
-        ).where(Base.classes.relatorios_aula.id_professores == professor_bd.id_professores).all()
+            .where(Base.classes.relatorios_aula.id_professores == professor_bd.id_professores)
+        ).all()
         return relatorios
 
 #Atualizar Relatório
