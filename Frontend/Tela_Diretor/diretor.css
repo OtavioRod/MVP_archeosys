@@ -1,4 +1,4 @@
-/* ------------------ RESET & BASE ------------------ */
+/* RESET & BASE */
 * {
   margin: 0;
   padding: 0;
@@ -15,7 +15,7 @@ body {
   min-height: 100vh;
 }
 
-/* ------------------ HEADER ------------------ */
+/* HEADER */
 header {
   background-color: #003366;
   padding: 15px;
@@ -33,7 +33,7 @@ header h1 {
   font-size: 0.95rem;
 }
 
-/* ------------------ MENU DE NAVEGAÇÃO ------------------ */
+/* MENU DE NAVEGAÇÃO */
 nav.menu {
   display: flex;
   justify-content: center;
@@ -70,7 +70,7 @@ nav.menu button:active {
   transform: scale(0.97);
 }
 
-/* ------------------ BOTÃO ATIVO ------------------ */
+/*BOTÃO ATIVO*/
 nav.menu button.ativo {
   background-color: #0073e6;
   color: #fff;
@@ -79,7 +79,7 @@ nav.menu button.ativo {
   border: 2px solid #66b2ff;
 }
 
-/* ------------------ CONTEÚDO PRINCIPAL ------------------ */
+/*CONTEÚDO PRINCIPAL*/
 main {
   flex: 1;
   display: grid;
@@ -113,7 +113,7 @@ main {
   font-size: 1.3rem;
 }
 
-/* ------------------ SEÇÃO INICIAL ------------------ */
+/*SEÇÃO INICIAL*/
 #inicio p {
   text-align: center;
   font-size: 0.95rem;
@@ -123,7 +123,7 @@ main {
   padding: 0 10px;
 }
 
-/* ------------------ FORMULÁRIOS ------------------ */
+/* FORMULÁRIOS */
 .form-group {
   margin-bottom: 12px;
 }
@@ -170,7 +170,7 @@ button:active {
   transform: scale(0.98);
 }
 
-/* ------------------ LISTA DE COORDENADORES ------------------ */
+/*LISTA DE COORDENADORES*/
 #listaCoordenadores {
   margin-top: 15px;
   list-style: none;
@@ -186,7 +186,7 @@ button:active {
   font-size: 0.9rem;
 }
 
-/* ------------------ MENSAGENS DE RESPOSTA ------------------ */
+/*MENSAGENS DE RESPOSTA */
 .resposta {
   margin-top: 12px;
   font-weight: bold;
@@ -201,12 +201,12 @@ button:active {
   color: red;
 }
 
-/* ------------------ CONTROLE DE VISIBILIDADE ------------------ */
+/*CONTROLE DE VISIBILIDADE*/
 .hidden {
   display: none !important;
 }
 
-/* ------------------ FOOTER ------------------ */
+/*FOOTER */
 footer {
   background-color: #003366;
   color: white;
@@ -220,7 +220,7 @@ footer p {
   margin: 0;
 }
 
-/* ------------------ RESPONSIVIDADE ------------------ */
+/*RESPONSIVIDADE */
 @media (max-width: 900px) {
   nav.menu {
     flex-wrap: wrap;

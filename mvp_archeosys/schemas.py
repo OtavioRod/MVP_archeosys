@@ -151,7 +151,8 @@ class CriarPresenca(BaseModel):
     justificativa: Optional[str] = None
 
 class AtualizarPresenca(BaseModel):
-    id_presenca: int
+    aluno: str
+    disciplina: str
     presente: bool
     justificativa: Optional[str] = None
 
