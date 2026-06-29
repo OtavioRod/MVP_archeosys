@@ -3,76 +3,290 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArckeoSys | Diário do Professor</title>
+  <title>ArckeoSys | Diario do Professor</title>
   <link rel="stylesheet" href="professor.css">
 </head>
 <body>
-  <header>
-    <h1>ArckeoSys</h1>
-    <div class="info-professor">
-      <p><strong>Professor:</strong> <span id="professor-nome">Carregando...</span></p>
-      <p><strong>Escola:</strong> <span id="professor-escola">Carregando...</span></p>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-mark">A</span>
+      <div>
+        <h1>ArckeoSys</h1>
+        <small>Diario Digital do Professor</small>
+      </div>
+    </div>
+
+    <div class="info-professor" aria-label="Dados do professor">
+      <p>Professor <strong id="professor-nome">Carregando...</strong></p>
+      <p>Escola <strong id="professor-escola">Carregando...</strong></p>
+    </div>
+
+    <div class="acoes-topo">
+      <button class="btn secundario" type="button" onclick="recarregarDiario()">Atualizar</button>
+      <button class="btn perigo" type="button" onclick="logout()">Sair</button>
     </div>
   </header>
-  
-  <main>
-    <!-- Seleção de turma e disciplina -->
-    <section class="formulario">
-      <label for="turma-select">Turma:</label>
-      <select id="turma-select"><option value="">Selecione</option></select>
 
-      <label for="disciplina-select">Disciplina:</label>
-      <select id="disciplina-select"><option value="">Selecione</option></select>
-
-      <button type="button" onclick="carregarAlunos()">Carregar Alunos</button>
-    </section>
-
-    <!-- Registro de aula -->
-    <section id="alunos-section" style="display: none;">
-      <h2>Registro de Aula - <span id="data-aula"></span></h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>Presente</th>
-            <th>Nota</th>
-            <th>Justificativa</th>
-            <th>Ações</th> <!-- Adicionado para Delete -->
-          </tr>
-        </thead>
-        <tbody id="alunos-tbody"></tbody>
-      </table>
-
-      <div class="relatorio">
-        <h3>Relatório da Aula</h3>
-        <textarea id="conteudo" placeholder="Conteúdo abordado"></textarea>
-        <textarea id="metodologia" placeholder="Metodologia utilizada"></textarea>
-        <textarea id="recursos" placeholder="Recursos didáticos"></textarea>
+  <main class="workspace">
+    <section class="command-panel">
+      <div class="page-title">
+        <p class="eyebrow">Diario de classe</p>
+        <h2>Lancamento da aula</h2>
+        <p>Escolha a turma e a disciplina para iniciar ou continuar o registro do dia.</p>
       </div>
 
-      <button class="enviar" type="button" onclick="enviarDiario()">Enviar Diário</button>
-      <div id="mensagem-feedback" style="margin-top:15px; color: green; font-weight: bold;"></div>
+      <section class="formulario" aria-labelledby="selecionar-aula">
+        <h3 id="selecionar-aula">Selecionar aula</h3>
+
+        <div class="campo">
+          <label for="turma-select">Turma</label>
+          <select id="turma-select">
+            <option value="">Selecione a turma</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label for="disciplina-select">Disciplina</label>
+          <select id="disciplina-select">
+            <option value="">Selecione a disciplina</option>
+          </select>
+        </div>
+
+        <button id="btn-iniciar-aula" class="btn primario" type="button" onclick="carregarAlunos(this)">
+          Abrir diario
+        </button>
+      </section>
     </section>
 
-    <!-- Visualização de notas e presença -->
-    <section id="visualizacao-notas" style="display: none;">
-      <h2>Visualização de Notas e Presença</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Aluno</th>
-            <th>Nota</th>
-            <th>Presença</th>
-          </tr>
-        </thead>
-        <tbody id="visualizacao-tbody"></tbody>
-      </table>
-      <button type="button" onclick="atualizarNotasEPresencas()">Atualizar Notas e Presença</button>
+    <section id="alunos-section" class="diario-layout" style="display:none;">
+      <aside class="aula-sidebar">
+        <section class="card aula-card">
+          <p class="eyebrow">Aula do dia</p>
+          <h2 id="data-aula">--/--/----</h2>
+
+          <dl class="info-aula">
+            <div>
+              <dt>Turma</dt>
+              <dd id="turma-atual">-</dd>
+            </div>
+            <div>
+              <dt>Disciplina</dt>
+              <dd id="disciplina-atual">-</dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="status-aula" aria-label="Status da aula">
+          <span id="status-presenca" class="status-pendente">Frequencia pendente</span>
+          <span id="status-notas" class="status-pendente">Notas pendentes</span>
+          <span id="status-relatorio" class="status-pendente">Relatorio pendente</span>
+        </section>
+
+        <section class="resumo-diario" aria-label="Resumo do diario">
+          <div class="card-resumo">
+            <h4>Alunos</h4>
+            <span id="total-alunos">0</span>
+          </div>
+          <div class="card-resumo positivo">
+            <h4>Presentes</h4>
+            <span id="total-presentes">0</span>
+          </div>
+          <div class="card-resumo alerta">
+            <h4>Ausentes</h4>
+            <span id="total-ausentes">0</span>
+          </div>
+          <div class="card-resumo destaque">
+            <h4>Media avaliacao</h4>
+            <span id="media-turma">0.0</span>
+          </div>
+        </section>
+      </aside>
+
+      <section class="diario-main">
+        <nav class="tabs" aria-label="Etapas do diario">
+          <button class="tab-btn active" data-aba="frequencia" type="button" onclick="abrirAba('frequencia')">
+            Frequencia <span id="contador-presentes">0</span>
+          </button>
+          <button class="tab-btn" data-aba="relatorio" type="button" onclick="abrirAba('relatorio')">
+            Aula
+          </button>
+          <button class="tab-btn" data-aba="notas" type="button" onclick="abrirAba('notas')">
+            Avaliacao <span id="contador-notas">0</span>
+          </button>
+        </nav>
+
+        <section id="aba-frequencia" class="aba card">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Chamada</p>
+              <h3>Registro de presenca</h3>
+            </div>
+
+            <div class="acoes-frequencia">
+              <button class="btn secundario" type="button" onclick="marcarTodosPresentes()">Todos presentes</button>
+              <button class="btn neutro" type="button" onclick="desmarcarTodos()">Todos ausentes</button>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Presente</th>
+                  <th>Justificativa</th>
+                  <th>Acoes</th>
+                </tr>
+              </thead>
+              <tbody id="frequencia-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="aba-notas" class="aba card" style="display:none;">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Opcional</p>
+              <h3>Avaliacao da aula</h3>
+              <p class="section-note">Use apenas quando houver prova, trabalho, atividade avaliativa ou participacao registrada.</p>
+            </div>
+          </div>
+
+          <label class="switch-line" for="avaliacao-ativa">
+            <input id="avaliacao-ativa" type="checkbox" onchange="alternarAvaliacao()" />
+            <span>Esta aula teve avaliacao com nota</span>
+          </label>
+
+          <div id="avaliacao-config" class="avaliacao-config" style="display:none;">
+            <div class="campo">
+              <label for="tipo-avaliacao">Tipo</label>
+              <select id="tipo-avaliacao">
+                <option value="Atividade">Atividade</option>
+                <option value="Trabalho">Trabalho</option>
+                <option value="Prova">Prova</option>
+                <option value="Participacao">Participacao</option>
+                <option value="Recuperacao">Recuperacao</option>
+              </select>
+            </div>
+
+            <div class="campo">
+              <label for="titulo-avaliacao">Identificacao</label>
+              <input id="titulo-avaliacao" type="text" placeholder="Ex.: Trabalho 2, Prova bimestral, Lista 1">
+            </div>
+
+            <div class="campo">
+              <label for="bimestre-avaliacao">Bimestre</label>
+              <select id="bimestre-avaliacao">
+                <option value="1">1o bimestre</option>
+                <option value="2">2o bimestre</option>
+                <option value="3">3o bimestre</option>
+                <option value="4">4o bimestre</option>
+              </select>
+            </div>
+          </div>
+
+          <div id="avaliacao-vazia" class="empty-state">
+            Nenhuma nota sera lancada para esta aula.
+          </div>
+
+          <div id="avaliacao-corpo" class="table-container" style="display:none;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Aluno</th>
+                  <th>Nota</th>
+                </tr>
+              </thead>
+              <tbody id="notas-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="aba-relatorio" class="aba card" style="display:none;">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Registro pedagogico</p>
+              <h3>Resumo da aula</h3>
+              <p class="section-note">Campos curtos ajudam a registrar o que aconteceu sem tomar tempo da aula.</p>
+            </div>
+          </div>
+
+          <div class="quick-actions">
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('expositiva')">Aula expositiva</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('atividade')">Atividade em sala</button>
+            <button class="btn neutro" type="button" onclick="aplicarModeloAula('revisao')">Revisao</button>
+          </div>
+
+          <div class="grid-relatorio">
+            <div class="campo campo-textarea">
+              <label for="conteudo">Conteudo trabalhado</label>
+              <textarea id="conteudo" placeholder="Ex.: Leitura orientada, interpretacao de texto e atividade pratica."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="metodologia">Metodologia</label>
+              <textarea id="metodologia" placeholder="Ex.: Aula dialogada, grupos de estudo, resolucao acompanhada."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="recursos">Recursos utilizados</label>
+              <textarea id="recursos" placeholder="Ex.: Livro didatico, quadro, projetor, folhas de atividade."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="tarefa-casa">Tarefa ou encaminhamento</label>
+              <textarea id="tarefa-casa" placeholder="Ex.: Concluir exercicios 1 a 5 ou trazer pesquisa para proxima aula."></textarea>
+            </div>
+
+            <div class="campo campo-textarea">
+              <label for="observacoes-aula">Observacoes da turma</label>
+              <textarea id="observacoes-aula" placeholder="Ex.: Turma participou bem; retomar o tema com alguns alunos na proxima aula."></textarea>
+            </div>
+          </div>
+        </section>
+
+        <section class="card painel-acoes">
+          <div>
+            <h3>Fechamento</h3>
+            <p id="status-rascunho">Nenhum rascunho carregado</p>
+          </div>
+
+          <div class="acoes-diario">
+            <button class="btn enviar" type="button" onclick="enviarDiario()">Finalizar aula</button>
+            <button class="btn secundario" type="button" onclick="mostrarVisualizacaoNotas()">Consultar registros</button>
+          </div>
+
+          <div id="mensagem-feedback" role="status"></div>
+        </section>
+      </section>
     </section>
 
-    <button type="button" onclick="mostrarVisualizacaoNotas()" style="margin-top: 20px;">
-      Visualizar Notas e Presença
-    </button>
+    <section id="visualizacao-notas" class="card visualizacao" style="display:none;">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Consulta</p>
+          <h2>Notas e presencas lancadas</h2>
+          <p>Revise e corrija registros ja realizados para esta turma e disciplina.</p>
+        </div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Aluno</th>
+              <th>Nota</th>
+              <th>Presenca</th>
+            </tr>
+          </thead>
+          <tbody id="visualizacao-tbody"></tbody>
+        </table>
+      </div>
+
+      <div class="acoes-diario">
+        <button class="btn primario" type="button" onclick="atualizarNotasEPresencas()">Atualizar registros</button>
+      </div>
+    </section>
   </main>
 
   <script src="professor.js"></script>

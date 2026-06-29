@@ -1,242 +1,311 @@
 :root {
-  --button-delete: #8d0a0a;
-  --blue-main: #003366;
+  --color-primary: #0078ff;
+  --color-primary-hover: #0068d8;
+
+  --color-background: #08111f;
+  --color-card: #1f2435;
+  --color-border: #34384a;
+
+  --color-text: #ffffff;
+  --color-text-secondary: #c7cad1;
+
+  --color-input: #2d3243;
+
+  --color-error: #ff5c5c;
+
+  --shadow-card:
+    0 10px 30px rgba(0, 0, 0, 0.35);
+
+  --radius: 14px;
 }
 
+/* RESET */
 
-body {
+* {
   margin: 0;
   padding: 0;
-  background-color: #1a2238;
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-text);
+
+  font-family:
+   "Roboto",
+    Tahoma,
+    Geneva,
+    Verdana,
+    sans-serif;
+
+  min-height: 100vh;
+}
+
+/* CONTAINER PRINCIPAL */
+
+.login-page {
+  min-height: 100vh;
+
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  font-family: "Arial", sans-serif;
-  color: white;
+
+  padding: 24px;
 }
 
-.login-container {
-  background-color: #2e344d;
+/* CARD */
+
+.login-card {
+  width: 100%;
+  max-width: 1000px;
+
+  display: flex;
+
+  background: var(--color-card);
+
+  border-radius: var(--radius);
+
+  overflow: hidden;
+
+  box-shadow: var(--shadow-card);
+}
+
+/* PAINEL ESQUERDO */
+
+.institutional-panel {
+  flex: 1;
+
   padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
-  text-align: center;
-  width: 300px;
+
+  border-right:
+    1px solid var(--color-border);
+}
+
+.project-header {
+  margin-bottom: 35px;
 }
 
 .project-name {
-  margin-bottom: 25px;
-  font-size: 28px;
-  color: #ffffff;
+  color: var(--color-primary);
+
+  font-size: 42px;
+  font-weight: 700;
+
+  margin-bottom: 20px;
 }
 
-input[type="email"],
-input[type="password"] {
+.project-description {
+  color: var(--color-text-secondary);
+
+  line-height: 1.7;
+
+  font-size: 16px;
+}
+
+/* SEÇÕES */
+
+.team-section,
+.contact-section {
+  margin-top: 30px;
+}
+
+.team-section h2,
+.contact-section h2 {
+  color: var(--color-primary);
+
+  margin-bottom: 15px;
+
+  font-size: 24px;
+}
+
+.team-list {
+  list-style: none;
+}
+
+.team-list li {
+  margin-bottom: 10px;
+
+  color: var(--color-text-secondary);
+
+  line-height: 1.5;
+}
+
+.contact-section p {
+  color: var(--color-text-secondary);
+}
+
+/* PAINEL DIREITO */
+
+.authentication-panel {
+  flex: 1;
+
+  padding: 50px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* CABEÇALHO LOGIN */
+
+.login-header {
+  margin-bottom: 35px;
+}
+
+.login-header h2 {
+  color: var(--color-primary);
+
+  font-size: 36px;
+
+  margin-bottom: 10px;
+}
+
+.login-header p {
+  color: var(--color-text-secondary);
+}
+
+/* FORMULÁRIO */
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  margin-bottom: 8px;
+
+  font-weight: 600;
+
+  color: var(--color-text);
+}
+
+.form-group input {
   width: 100%;
-  padding: 12px;
-  margin: 10px 0;
+
+  padding: 14px;
+
+  border-radius: 8px;
+
+  border: 1px solid var(--color-border);
+
+  background: var(--color-input);
+
+  color: var(--color-text);
+
+  font-size: 15px;
+
+  transition: 0.3s;
+}
+
+.form-group input::placeholder {
+  color: #8e95a3;
+}
+
+.form-group input:focus {
+  outline: none;
+
+  border-color: var(--color-primary);
+
+  box-shadow:
+    0 0 0 3px rgba(0, 120, 255, 0.2);
+}
+
+/* BOTÃO */
+
+.login-button {
+  margin-top: 10px;
+
+  padding: 15px;
+
   border: none;
-  border-radius: 5px;
-  box-sizing: border-box;
-  background-color: #ffffff;
-  color: #000;
+
+  border-radius: 8px;
+
+  background: var(--color-primary);
+
+  color: white;
+
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: 0.3s;
+}
+
+.login-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.login-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+/* ERRO */
+
+.error-message {
+  min-height: 20px;
+
+  color: var(--color-error);
+
   font-size: 14px;
 }
 
-button {
-  background-color: #0099ff;
-  color: #fff;
-  padding: 12px;
-  width: 100%;
-  border: none;
-  border-radius: 5px;
-  margin-top: 15px;
-  font-size: 16px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
+/* FOOTER */
 
-button:hover {
-  background-color: #007acc;
-}
+.login-footer {
+  margin-top: 25px;
 
-.erro {
-  color: var(--button-delete);
-  margin-top: 15px;
-}
-
-
-body {
-  font-family: Arial, sans-serif;
-  margin: 0;
-  background: #003366;
-  color: #333;
-}
-
-header {
-  background: var(--blue-main);
-  color: white;
   text-align: center;
-  padding: 1rem;
 }
 
-main {
-  max-width: 1000px;
-  margin: 2rem auto;
-  background: white;
-  padding: 1rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+.login-footer p {
+  color: #80889a;
+
+  font-size: 13px;
 }
 
-.form-section {
-  margin-bottom: 2rem;
+/* RESPONSIVIDADE*/
+
+@media (max-width: 900px) {
+
+  .login-card {
+    flex-direction: column;
+  }
+
+  .institutional-panel {
+    border-right: none;
+
+    border-bottom:
+      1px solid var(--color-border);
+  }
+
+  .institutional-panel,
+  .authentication-panel {
+    width: 100%;
+  }
 }
 
-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
-}
+@media (max-width: 600px) {
 
-input,
-button {
-  padding: 0.6rem;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
+  .project-name {
+    font-size: 34px;
+  }
 
-button {
-  background: var(--blue-main);
-  color: white;
-  border: none;
-  cursor: pointer;
-}
+  .login-header h2 {
+    font-size: 30px;
+  }
 
-button:hover {
-  background: #0055aa;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-}
-
-th,
-td {
-  border: 1px solid #ddd;
-  padding: 0.7rem;
-}
-
-th {
-  background: var(--blue-main);
-  color: white;
-}
-
-tr:nth-child(even) {
-  background: #f9f9f9;
-}
-
-.acoes button {
-  display: block;
-  margin-right: 0.3rem;
-  padding: 0.4rem 0.7rem;
-  border: none;
-  border-radius: 4px;
-  color: white;
-  cursor: pointer;
-}
-
-.acoes .editar {
-  background: #0055aa;
-}
-
-.acoes .excluir {
-  background: var(--button-delete);
-}
-
-.acoes .editar:hover {
-  background: #0074d9;
-}
-
-.acoes .excluir:hover {
-  background: #f00505;
-}
-
-.popup {
-  position: fixed;
-  bottom: 30px;
-  right: 20px;
-  background: var(--blue-main);
-  color: white;
-  padding: 0.8rem 1.2rem;
-  border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-}
-
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(140, 172, 125, 0.301);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background: white;
-  padding: 1.5rem;
-  border-radius: 8px;
-  width: 320px;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.modal-content h3 {
-  text-align: center;
-  color: var(--blue-main);
-}
-
-.modal-content button {
-  padding: 0.6rem;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  color: white;
-
-}
-
-#salvarEdicao {
-  background: #05dd05;
-}
-
-#cancelar {
-  background: #0f2c63;
-}
-
-#delEscola {
-  background: var(--button-delete);
-}
-
-#delEndereco {
-  background: var(--button-delete);
-}
-
-#delDiretor {
-  background: var(--button-delete);
-}
-
-#delEmail {
-  background: var(--button-delete);
-}
-
-.modal-content button:hover {
-  opacity: 0.9;
+  .institutional-panel,
+  .authentication-panel {
+    padding: 30px;
+  }
 }
