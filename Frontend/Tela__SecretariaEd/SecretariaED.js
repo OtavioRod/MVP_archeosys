@@ -1,6 +1,5 @@
 const API_URL = "http://localhost:8000";
 
-// pega o token da sua sessão (Caso o backend precise dele)
 const TOKEN = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
 
 const headersPadrao = {
@@ -41,7 +40,7 @@ const btnExcluirEmail = document.getElementById("btnExcluirEmail");
 
 let idSelecionado = null;
 
-//exibição dos cards
+//exib cards
 btnMostrarEscola.addEventListener("click", () => {
   cardEscola.style.display = "block";
   cardDiretor.style.display = "none";
@@ -64,8 +63,6 @@ if (btnListarTudo) {
 // Fechamento dos Modais Nativos <dialog>
 fecharEditar.addEventListener("click", () => modalEditar.close());
 fecharExcluir.addEventListener("click", () => modalExcluir.close());
-
-// select de escolas 
 
 async function atualizarSelectEscolas() {
   try {
@@ -241,7 +238,7 @@ tabela.addEventListener("click", async (event) => {
     }
   }
 
-  // Captura ação do Botão Excluir
+  //ação do Botão Excluir
   if (event.target.classList.contains("excluir")) {
     modalExcluir.showModal();
   }
