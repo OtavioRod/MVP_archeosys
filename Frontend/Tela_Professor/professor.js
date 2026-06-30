@@ -371,8 +371,17 @@ async function enviarDiario() {
   const metodologia = document.getElementById("metodologia").value.trim();
   const recursos = document.getElementById("recursos").value.trim();
 
-  const tarefa = document.getElementById("tarefa-casa")?.value.trim() || "";
-  const observacoes = document.getElementById("observacoes-aula")?.value.trim() || "";
+  let tarefa = "";
+  let observacoes = "";
+
+  if (document.getElementById("houve-tarefa").checked) {
+    tarefa = document.getElementById("tarefa-casa")?.value.trim() || "";
+  }
+
+  if (document.getElementById("houve-observacoes").checked) {
+    observacoes = document.getElementById("observacoes-aula")?.value.trim() || "";
+  }
+
 
   const avaliacaoAtiva = document.getElementById("avaliacao-ativa")?.checked || false;
   const tipoAvaliacao = document.getElementById("tipo-avaliacao")?.value || "";
