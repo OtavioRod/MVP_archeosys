@@ -13,7 +13,7 @@ const mensagemErro =
 const botaoLogin =
   document.querySelector(".login-button");
 
-/*LOGIN*/
+/*login*/
 
 loginForm.addEventListener(
   "submit",
@@ -99,7 +99,7 @@ loginForm.addEventListener(
   }
 );
 
-/*REDIRECIONAMENTO*/
+/*redirecionamento*/
 
 function redirecionarUsuario(tipo) {
 
@@ -137,7 +137,7 @@ function redirecionarUsuario(tipo) {
     destino;
 }
 
-/*FEEDBACK*/
+/*feedback*/
 
 function mostrarErro(texto) {
 
@@ -157,7 +157,7 @@ function limparErro() {
     "none";
 }
 
-/*LOADING*/
+/*loading*/
 
 function ativarLoading() {
 
@@ -179,7 +179,7 @@ function desativarLoading() {
     "Entrar";
 }
 
-/* AUTOCOMPLETE DE DOMÍNIO*/
+/*autocomplete*/
 
 const domains = [
   "gmail.com",
@@ -229,7 +229,7 @@ emailInput.addEventListener(
   }
 );
 
-/*ENTER NO CAMPO SENHA*/
+/*enter no campo senha*/
 
 senhaInput.addEventListener(
   "keydown",
