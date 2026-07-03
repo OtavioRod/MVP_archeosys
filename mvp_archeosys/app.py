@@ -44,7 +44,7 @@ app.add_middleware(
 )
 
 def ensure_database():
-    default_url = "postgresql://postgres:01122000@localhost:5432/postgres"
+    default_url = URL_DATABASE or "postgresql://postgres:01122000@localhost:5432/postgres"
     target_db = "MVP"
 
     engine = create_engine(default_url)
@@ -68,9 +68,8 @@ def prepare_base():
     ensure_database()
     global engine, Base, SessionLocal, metadata
 
-    DATABASE_URL = "postgresql://postgres:01122000@localhost:5432/MVP"
+    DATABASE_URL = URL_DATABASE or "postgresql://postgres:01122000@localhost:5432/MVP"
     engine = create_engine(DATABASE_URL)
-    #engine = create_engine(URL_DATABASE)#env
     Base = automap_base()
     Base.prepare(autoload_with=engine)
 
