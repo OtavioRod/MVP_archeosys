@@ -1,301 +1,445 @@
-const API_URL = "http://localhost:8000";
-
-// pega o token da sua sessão (Caso o backend precise dele)
-const TOKEN = localStorage.getItem("token") || sessionStorage.getItem("token") || "";
-
-const headersPadrao = {
-  "Content-Type": "application/json",
-  ...(TOKEN ? { "Authorization": `Bearer ${TOKEN}` } : {})
-};
-
-// elementos da tela
-const tabela = document.querySelector("#tabela tbody");
-
-const formEscola = document.getElementById("formEscola");
-const formDiretor = document.getElementById("formDiretor");
-const formEditar = document.getElementById("formEditar");
-
-const cardEscola = document.getElementById("cardEscola");
-const cardDiretor = document.getElementById("cardDiretor");
-
-const btnMostrarEscola = document.getElementById("btnMostrarEscola");
-const btnMostrarDiretor = document.getElementById("btnMostrarDiretor");
-const btnAtualizarLista = document.getElementById("btnAtualizarLista");
-const btnListarTudo = document.getElementById("btnListarTudo");
-
-const selectEscolaDiretor = document.getElementById("escolaDiretor");
-
-const fecharEscola = document.getElementById("fecharEscola");
-const fecharDiretor = document.getElementById("fecharDiretor");
-
-const modalEditar = document.getElementById("modalEditar");
-const modalExcluir = document.getElementById("modalExcluir");
-
-const fecharEditar = document.getElementById("fecharEditar");
-const fecharExcluir = document.getElementById("fecharExcluir");
-
-const btnExcluirEscola = document.getElementById("btnExcluirEscola");
-const btnExcluirEndereco = document.getElementById("btnExcluirEndereco");
-const btnExcluirDiretor = document.getElementById("btnExcluirDiretor");
-const btnExcluirEmail = document.getElementById("btnExcluirEmail");
-
-let idSelecionado = null;
-
-//exibição dos cards
-btnMostrarEscola.addEventListener("click", () => {
-  cardEscola.style.display = "block";
-  cardDiretor.style.display = "none";
-});
-
-btnMostrarDiretor.addEventListener("click", () => {
-  cardDiretor.style.display = "block";
-  cardEscola.style.display = "none";
-  atualizarSelectEscolas();
-});
-
-fecharEscola.addEventListener("click", () => { cardEscola.style.display = "none"; });
-fecharDiretor.addEventListener("click", () => { cardDiretor.style.display = "none"; });
-
-btnAtualizarLista.addEventListener("click", () => { carregarEscolas(); });
-if (btnListarTudo) {
-  btnListarTudo.addEventListener("click", () => { carregarEscolas(); });
-}
-
-// Fechamento dos Modais Nativos <dialog>
-fecharEditar.addEventListener("click", () => modalEditar.close());
-fecharExcluir.addEventListener("click", () => modalExcluir.close());
-
-// select de escolas 
-
-async function atualizarSelectEscolas() {
-  try {
-    const resp = await fetch(`${API_URL}/escolas/`, { headers: headersPadrao });
-    const escolas = await resp.json();
-
-    selectEscolaDiretor.innerHTML = '<option value="" disabled selected>Selecione a Escola Vinculada</option>';
-
-    const listaEscolas = Array.isArray(escolas) ? escolas : [];
-
-    listaEscolas.forEach(e => {
-      const nome = e.nome || e.nomeEscola || "";
-      if (nome) {
-        const option = document.createElement("option");
-        
-        option.value = nome; 
-        option.textContent = nome;
-        selectEscolaDiretor.appendChild(option);
-      }
-    });
-  } catch (err) {
-    console.error("Erro ao carregar escolas para o select:", err);
-  }
-}
-
-
-// buscar e renderizar escolas e diretores meu READ 
-async function carregarEscolas() {
-  try {
-    const resp = await fetch(`${API_URL}/escolas/`, { headers: headersPadrao });
-    
-    if (resp.status === 401) {
-      tabela.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Erro de Autenticação (401). Faça login novamente.</td></tr>`;
-      return;
-    }
-
-    const dados = await resp.json();
-    const escolas = Array.isArray(dados) ? dados : [];
-
-    tabela.innerHTML = "";
-
-    if (escolas.length === 0) {
-      tabela.innerHTML = `<tr><td colspan="5" style="text-align:center;">Nenhuma escola cadastrada.</td></tr>`;
-      return;
-    }
-
-    escolas.forEach((e) => {
-      const tr = document.createElement("tr");
-
-      const nomeEscola = e.nome || e.nomeEscola || "";
-      const enderecoEscola = e.endereco || e.enderecoEscola || "";
-      const nomeDiretor = e.diretor?.nome || e.nomeDiretor || "-";
-      const emailDiretor = e.diretor?.email || e.emailDiretor || "-";
-
-      tr.innerHTML = `
-        <td>${nomeEscola}</td>
-        <td>${enderecoEscola}</td>
-        <td>${nomeDiretor}</td>
-        <td>${emailDiretor}</td>
-        <td>
-          <div class="acoes">
-            <button data-id="${e.id}" class="btn-editar editar">Editar</button>
-            <button data-id="${e.id}" class="btn-excluir excluir">Excluir</button>
-          </div>
-        </td>
-      `;
-      tabela.appendChild(tr);
-    });
-  } catch (err) {
-    console.error("Erro ao carregar escolas:", err);
-    tabela.innerHTML = `<tr><td colspan="5" style="text-align:center;">Erro de conexão com o servidor.</td></tr>`;
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
-  carregarEscolas();
-  atualizarSelectEscolas();
-});
+    const API_URL = "http://localhost:8000";
 
-// registrar nova escola CREATE
-formEscola.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
+    const TOKEN =
+        localStorage.getItem("token") ||
+        sessionStorage.getItem("token") ||
+        "";
 
-  const nome = document.getElementById("nomeEscola").value.trim();
-  const endereco = document.getElementById("enderecoEscola").value.trim();
-  const resposta = document.getElementById("respostaEscola");
+    const headersPadrao = {
+        "Content-Type": "application/json",
+        ...(TOKEN ? { Authorization: `Bearer ${TOKEN}` } : {})
+    };
 
-  resposta.textContent = "Enviando...";
+    const $ = (id) => document.getElementById(id);
 
-  try {
-    const r = await fetch(`${API_URL}/escolas/`, {
-      method: "POST",
-      headers: headersPadrao,
-      body: JSON.stringify({ nome, endereco }),
-    });
+    const tabela = document.querySelector("#tabela tbody");
 
-    if (r.status === 201 || r.ok) {
-      resposta.textContent = "Escola cadastrada com sucesso.";
-      formEscola.reset();
-      carregarEscolas();
-      atualizarSelectEscolas();
-    } else if (r.status === 409) {
-      resposta.textContent = "Escola já cadastrada.";
-    } else {
-      resposta.textContent = `Erro ao cadastrar (Status: ${r.status})`;
+    const formEscola = $("formEscola");
+    const formDiretor = $("formDiretor");
+    const formEditar = $("formEditar");
+
+    const cardEscola = $("cardEscola");
+    const cardDiretor = $("cardDiretor");
+
+    const btnMostrarEscola = $("btnMostrarEscola");
+    const btnMostrarDiretor = $("btnMostrarDiretor");
+    const btnAtualizarLista = $("btnAtualizarLista");
+    const btnListarTudo = $("btnListarTudo");
+    const btnVoltarLogin = $("btnVoltarLogin");
+
+    const campoPesquisa = $("campoPesquisa");
+    const selectEscolaDiretor = $("escolaDiretor");
+
+    const respostaEscola = $("respostaEscola");
+    const respostaDiretor = $("respostaDiretor");
+
+    const fecharEscola = $("fecharEscola");
+    const fecharDiretor = $("fecharDiretor");
+
+    const modalEditar = $("modalEditar");
+    const modalExcluir = $("modalExcluir");
+
+    const fecharEditar = $("fecharEditar");
+    const fecharExcluir = $("fecharExcluir");
+
+    const btnExcluirEscola = $("btnExcluirEscola");
+    const btnExcluirEndereco = $("btnExcluirEndereco");
+    const btnExcluirDiretor = $("btnExcluirDiretor");
+    const btnExcluirEmail = $("btnExcluirEmail");
+
+    const totalEscolas = $("totalEscolas");
+    const totalDiretores = $("totalDiretores");
+
+    let listaEscolas = [];
+    let listaFiltrada = [];
+    let idSelecionado = null;
+
+    function mostrarMensagem(elemento, mensagem, sucesso = true) {
+        if (!elemento) {
+            alert(mensagem);
+            return;
+        }
+
+        elemento.textContent = mensagem;
+        elemento.style.color = sucesso ? "#198754" : "#b42318";
+
+        setTimeout(() => {
+            elemento.textContent = "";
+        }, 3500);
     }
-  } catch {
-    resposta.textContent = "Erro de conexão com o servidor.";
-  }
-});
 
-// registar novo diretor (CREATE)
-formDiretor.addEventListener("submit", async (ev) => {
-  ev.preventDefault();
-
-  const nome = document.getElementById("nomeDiretor").value.trim();
-  const email = document.getElementById("emailDiretor").value.trim();
-  const senha = document.getElementById("senhaDiretor").value;
-  const escola = selectEscolaDiretor.value; 
-  const resposta = document.getElementById("respostaDiretor");
-
-  if (!escola) {
-    resposta.textContent = "Por favor, selecione uma escola cadastrada.";
-    return;
-  }
-
-  resposta.textContent = "Enviando...";
-
-  try {
-    const resp = await fetch(`${API_URL}/diretores/`, {
-      method: "POST",
-      headers: headersPadrao,
-      body: JSON.stringify({ nome, email, senha, escola }),
-    });
-
-    if (resp.status === 201 || resp.ok) {
-      resposta.textContent = "Diretor cadastrado com sucesso.";
-      formDiretor.reset();
-      carregarEscolas();
-    } else if (resp.status === 409) {
-      resposta.textContent = "Diretor ou escola já vinculada.";
-    } else {
-      resposta.textContent = `Erro ao cadastrar (Status: ${resp.status})`;
+    function esconderCards() {
+        if (cardEscola) cardEscola.style.display = "none";
+        if (cardDiretor) cardDiretor.style.display = "none";
     }
-  } catch {
-    resposta.textContent = "Erro de conexão com o servidor.";
-  }
-});
 
-// disparar modais 
-
-tabela.addEventListener("click", async (event) => {
-  const id = event.target.dataset.id;
-  if (!id) return;
-
-  idSelecionado = id; 
-
-  // Captura ação do Botão Editar
-  if (event.target.classList.contains("editar")) {
-    try {
-      const resp = await fetch(`${API_URL}/escolas/${id}`, { headers: headersPadrao });
-      const e = await resp.json();
-
-      document.getElementById("editId").value = id;
-      document.getElementById("editEscola").value = e.nome || e.nomeEscola || "";
-      document.getElementById("editEndereco").value = e.endereco || e.enderecoEscola || "";
-      document.getElementById("editDiretor").value = e.diretor?.nome || e.nomeDiretor || "";
-      document.getElementById("editEmail").value = e.diretor?.email || e.emailDiretor || "";
-
-      modalEditar.showModal(); // Comando nativo para renderizar <dialog>
-    } catch (err) {
-      console.error("Erro ao buscar dados para edição:", err);
+    function abrirCardEscola() {
+        esconderCards();
+        if (cardEscola) cardEscola.style.display = "block";
     }
-  }
 
-  // Captura ação do Botão Excluir
-  if (event.target.classList.contains("excluir")) {
-    modalExcluir.showModal();
-  }
-});
+    function abrirCardDiretor() {
+        esconderCards();
+        if (cardDiretor) cardDiretor.style.display = "block";
+        atualizarSelectEscolas();
+    }
 
-// salva ação do cadastro (UPDATE)
-formEditar.addEventListener("submit", async (event) => { 
-  event.preventDefault(); 
-  
-  const data = { 
-    nome: document.getElementById("editEscola").value.trim(),
-    endereco: document.getElementById("editEndereco").value.trim(),
-    diretor: {
-      nome: document.getElementById("editDiretor").value.trim(),
-      email: document.getElementById("editEmail").value.trim(),
-    },
-  };
+    function atualizarDashboard(lista) {
+        if (totalEscolas) totalEscolas.textContent = lista.length;
 
-  try {
+        const diretores = lista.filter((e) => e.diretor).length;
 
-    await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-      method: "PUT",
-      headers: headersPadrao,
-      body: JSON.stringify(data),
+        if (totalDiretores) totalDiretores.textContent = diretores;
+    }
+
+    function renderizarTabela(lista) {
+        if (!tabela) return;
+
+        tabela.innerHTML = "";
+
+        if (!lista || lista.length === 0) {
+            tabela.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center;">
+                        Nenhuma escola encontrada.
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        lista.forEach((escola) => {
+            const tr = document.createElement("tr");
+
+            tr.innerHTML = `
+                <td>${escola.nome || "-"}</td>
+                <td>${escola.endereco || "-"}</td>
+                <td>${escola.diretor?.nome || "<span style='color:#888;'>Sem Diretor</span>"}</td>
+                <td>${escola.diretor?.email || "-"}</td>
+                <td>
+                    <div class="acoes">
+                        <button
+                            type="button"
+                            class="btn-editar editar"
+                            data-id="${escola.id}">
+                            Editar
+                        </button>
+
+                        <button
+                            type="button"
+                            class="btn-excluir excluir"
+                            data-id="${escola.id}">
+                            Excluir
+                        </button>
+                    </div>
+                </td>
+            `;
+
+            tabela.appendChild(tr);
+        });
+    }
+
+    async function carregarEscolas() {
+        if (!tabela) return;
+
+        tabela.innerHTML = `
+            <tr>
+                <td colspan="5" style="text-align:center;">
+                    Carregando informações...
+                </td>
+            </tr>
+        `;
+
+        try {
+            const resp = await fetch(`${API_URL}/escolas/`, {
+                headers: headersPadrao
+            });
+
+            if (resp.status === 401 || resp.status === 403) {
+                tabela.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center;color:red;">
+                            Sessão expirada ou acesso negado.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            if (!resp.ok) {
+                throw new Error("Erro ao carregar escolas");
+            }
+
+            const dados = await resp.json();
+
+            listaEscolas = Array.isArray(dados) ? dados : [];
+            listaFiltrada = [...listaEscolas];
+
+            atualizarDashboard(listaEscolas);
+            renderizarTabela(listaFiltrada);
+
+        } catch (erro) {
+            console.error("Erro ao carregar escolas:", erro);
+
+            tabela.innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center;">
+                        Erro ao conectar com o servidor.
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+    async function atualizarSelectEscolas() {
+        if (!selectEscolaDiretor) return;
+
+        try {
+            const resp = await fetch(`${API_URL}/escolas/`, {
+                headers: headersPadrao
+            });
+
+            if (!resp.ok) throw new Error();
+
+            const dados = await resp.json();
+            const escolas = Array.isArray(dados) ? dados : [];
+
+            selectEscolaDiretor.innerHTML = `
+                <option value="" disabled selected>
+                    Selecione a Escola
+                </option>
+            `;
+
+            escolas.forEach((escola) => {
+                const option = document.createElement("option");
+                option.value = escola.nome;
+                option.textContent = escola.nome;
+                selectEscolaDiretor.appendChild(option);
+            });
+
+        } catch (erro) {
+            console.error("Erro ao carregar select:", erro);
+        }
+    }
+
+    function filtrarTabela() {
+        const texto = campoPesquisa.value.toLowerCase().trim();
+
+        listaFiltrada = listaEscolas.filter((escola) => {
+            const nome = (escola.nome || "").toLowerCase();
+            const endereco = (escola.endereco || "").toLowerCase();
+            const diretor = (escola.diretor?.nome || "").toLowerCase();
+            const email = (escola.diretor?.email || "").toLowerCase();
+
+            return (
+                nome.includes(texto) ||
+                endereco.includes(texto) ||
+                diretor.includes(texto) ||
+                email.includes(texto)
+            );
+        });
+
+        renderizarTabela(listaFiltrada);
+    }
+
+    formEscola?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        const nome = $("nomeEscola").value.trim();
+        const endereco = $("enderecoEscola").value.trim();
+
+        mostrarMensagem(respostaEscola, "Salvando...");
+
+        try {
+            const resp = await fetch(`${API_URL}/escolas/`, {
+                method: "POST",
+                headers: headersPadrao,
+                body: JSON.stringify({ nome, endereco })
+            });
+
+            if (resp.ok) {
+                mostrarMensagem(respostaEscola, "Escola cadastrada com sucesso.");
+                formEscola.reset();
+                esconderCards();
+                carregarEscolas();
+                atualizarSelectEscolas();
+            } else if (resp.status === 409) {
+                mostrarMensagem(respostaEscola, "Escola já cadastrada.", false);
+            } else {
+                mostrarMensagem(respostaEscola, "Erro ao cadastrar escola.", false);
+            }
+
+        } catch {
+            mostrarMensagem(respostaEscola, "Erro de conexão.", false);
+        }
     });
-    modalEditar.close();
-    carregarEscolas();
-  } catch (err) {
-    console.error("Erro ao atualizar registro:", err);
-  }
-});
 
+    formDiretor?.addEventListener("submit", async (event) => {
+        event.preventDefault();
 
-// exclusões
-async function realizarExclusao(tipo) {
-  try {
-  
-    await fetch(`${API_URL}/escolas/${idSelecionado}`, {
-      method: "DELETE",
-      headers: headersPadrao,
-      body: JSON.stringify({ tipo }),
+        const nome = $("nomeDiretor").value.trim();
+        const email = $("emailDiretor").value.trim();
+        const senha = $("senhaDiretor").value;
+        const escola = selectEscolaDiretor.value;
+
+        if (!escola) {
+            mostrarMensagem(respostaDiretor, "Selecione uma escola.", false);
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_URL}/diretores/`, {
+                method: "POST",
+                headers: headersPadrao,
+                body: JSON.stringify({ nome, email, senha, escola })
+            });
+
+            if (resp.ok) {
+                mostrarMensagem(respostaDiretor, "Diretor cadastrado com sucesso.");
+                formDiretor.reset();
+                esconderCards();
+                carregarEscolas();
+            } else {
+                mostrarMensagem(respostaDiretor, "Erro ao cadastrar diretor.", false);
+            }
+
+        } catch {
+            mostrarMensagem(respostaDiretor, "Erro de conexão.", false);
+        }
     });
-    modalExcluir.close();
+
+    tabela?.addEventListener("click", async (event) => {
+        const botao = event.target.closest("button");
+        if (!botao) return;
+
+        const id = botao.dataset.id;
+        if (!id) return;
+
+        idSelecionado = id;
+
+        if (botao.classList.contains("editar")) {
+            try {
+                const resp = await fetch(`${API_URL}/escolas/${id}`, {
+                    headers: headersPadrao
+                });
+
+                if (!resp.ok) throw new Error();
+
+                const escola = await resp.json();
+
+                $("editId").value = id;
+                $("editEscola").value = escola.nome || "";
+                $("editEndereco").value = escola.endereco || "";
+                $("editDiretor").value = escola.diretor?.nome || "";
+                $("editEmail").value = escola.diretor?.email || "";
+
+                modalEditar.showModal();
+
+            } catch {
+                alert("Não foi possível carregar os dados.");
+            }
+        }
+
+        if (botao.classList.contains("excluir")) {
+            modalExcluir.showModal();
+        }
+    });
+
+    formEditar?.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        if (!idSelecionado) {
+            alert("Nenhum registro selecionado.");
+            return;
+        }
+
+        const dados = {
+            nome: $("editEscola").value.trim(),
+            endereco: $("editEndereco").value.trim(),
+            diretor: {
+                nome: $("editDiretor").value.trim(),
+                email: $("editEmail").value.trim()
+            }
+        };
+
+        try {
+            const resp = await fetch(`${API_URL}/escolas/${idSelecionado}`, {
+                method: "PUT",
+                headers: headersPadrao,
+                body: JSON.stringify(dados)
+            });
+
+            if (!resp.ok) throw new Error();
+
+            modalEditar.close();
+            alert("Registro atualizado com sucesso.");
+            carregarEscolas();
+
+        } catch {
+            alert("Erro ao atualizar registro.");
+        }
+    });
+
+    async function realizarExclusao(tipo) {
+        if (!idSelecionado) {
+            alert("Nenhum registro selecionado.");
+            return;
+        }
+
+        try {
+            const resp = await fetch(`${API_URL}/escolas/${idSelecionado}`, {
+                method: "DELETE",
+                headers: headersPadrao,
+                body: JSON.stringify({ tipo })
+            });
+
+            if (!resp.ok) throw new Error();
+
+            modalExcluir.close();
+            alert("Exclusão realizada com sucesso.");
+
+            carregarEscolas();
+            atualizarSelectEscolas();
+
+        } catch {
+            alert("Erro durante a exclusão.");
+        }
+    }
+
+    btnMostrarEscola?.addEventListener("click", abrirCardEscola);
+    btnMostrarDiretor?.addEventListener("click", abrirCardDiretor);
+
+    fecharEscola?.addEventListener("click", esconderCards);
+    fecharDiretor?.addEventListener("click", esconderCards);
+
+    btnAtualizarLista?.addEventListener("click", carregarEscolas);
+
+    btnListarTudo?.addEventListener("click", () => {
+        if (campoPesquisa) campoPesquisa.value = "";
+        carregarEscolas();
+    });
+
+    campoPesquisa?.addEventListener("input", filtrarTabela);
+
+    fecharEditar?.addEventListener("click", () => {
+        modalEditar.close();
+    });
+
+    fecharExcluir?.addEventListener("click", () => {
+        modalExcluir.close();
+    });
+
+    btnExcluirEscola?.addEventListener("click", () => realizarExclusao("escola"));
+    btnExcluirEndereco?.addEventListener("click", () => realizarExclusao("endereco"));
+    btnExcluirDiretor?.addEventListener("click", () => realizarExclusao("diretor"));
+    btnExcluirEmail?.addEventListener("click", () => realizarExclusao("email"));
+
+    btnVoltarLogin?.addEventListener("click", () => {
+        window.location.href = "../login.html";
+    });
+
+    esconderCards();
     carregarEscolas();
     atualizarSelectEscolas();
-  } catch (err) {
-    
-    console.error(`Erro ao tentar deletar (${tipo}):`, err);
-  }
-}
-
-// Vinculando funções aos gatilhos do Modal de Exclusão
-btnExcluirEscola.onclick = () => realizarExclusao("escola");
-btnExcluirEndereco.onclick = () => realizarExclusao("endereco");
-btnExcluirDiretor.onclick = () => realizarExclusao("diretor");
-btnExcluirEmail.onclick = () => realizarExclusao("email");
-
+});
