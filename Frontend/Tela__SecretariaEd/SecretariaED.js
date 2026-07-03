@@ -436,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
     btnExcluirEmail?.addEventListener("click", () => realizarExclusao("email"));
 
     btnVoltarLogin?.addEventListener("click", () => {
-        window.location.href = "../login/login.html";
+        window.location.href = "../login.html";
     });
 
     esconderCards();
